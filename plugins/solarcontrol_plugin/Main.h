@@ -13,7 +13,6 @@
 #include "PluginUtilities.h"
 #include <sstream>
 #include <iostream>
-using namespace std;
 
 static int set_iPluginDebug = 0;
 PLUGIN_RETURNCODE returncode;

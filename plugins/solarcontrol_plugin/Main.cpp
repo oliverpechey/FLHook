@@ -33,18 +33,18 @@ struct SOLAR_ARCHTYPE_STRUCT
 	uint Base;
 };
 
-static map<wstring, SOLAR_ARCHTYPE_STRUCT> mapSolarArchtypes;
+static std::map<std::wstring, SOLAR_ARCHTYPE_STRUCT> mapSolarArchtypes;
 
 struct SOLAR
 {
-	wstring name;
+	std::wstring name;
 	Vector pos;
 	uint system;
 	Matrix rot;
 };
 
-static map<int, SOLAR> startupSOLARs;
-static map<uint, wstring> spawnedSOLARs;
+static std::map<int, SOLAR> startupSOLARs;
+static std::map<uint, std::wstring> spawnedSOLARs;
 
 float rand_FloatRange(float a, float b)
 {
@@ -60,7 +60,7 @@ void LoadSolarInfo()
 	// The path to the configuration file.
 	char szCurDir[MAX_PATH];
 	GetCurrentDirectory(sizeof(szCurDir), szCurDir);
-	string scPluginCfgFile = string(szCurDir) + "\\flhook_plugins\\solar.cfg";
+	std::string scPluginCfgFile = std::string(szCurDir) + "\\flhook_plugins\\solar.cfg";
 
 	INI_Reader ini;
 	if (ini.open(scPluginCfgFile.c_str(), false))
@@ -74,10 +74,10 @@ void LoadSolarInfo()
 				{
 					if (ini.is_value("solar"))
 					{
-						string setsolarname = ini.get_value_string(0);
-						wstring solarname = stows(setsolarname);
+						std::string setsolarname = ini.get_value_string(0);
+						std::wstring solarname = stows(setsolarname);
 						solarstruct.Shiparch = CreateID(ini.get_value_string(1));
-						string loadoutstring = ini.get_value_string(2);
+						std::string loadoutstring = ini.get_value_string(2);
 						solarstruct.Loadout = CreateID(loadoutstring.c_str());
 
 						//IFF calc
@@ -141,12 +141,12 @@ void Logging(const char* szString, ...)
 	Logfile = fopen("./flhook_logs/solar_log.log", "at");
 }
 
-void Log_CreateSolar(wstring name)
+void Log_CreateSolar(std::wstring name)
 {
 	//internal log
-	wstring wscMsgLog = L"created <%name>";
+	std::wstring wscMsgLog = L"created <%name>";
 	wscMsgLog = ReplaceStr(wscMsgLog, L"%name", name.c_str());
-	string scText = wstos(wscMsgLog);
+	std::string scText = wstos(wscMsgLog);
 	Logging("%s", scText.c_str());
 }
 
@@ -209,7 +209,7 @@ int __cdecl HkCreateSolar(uint& iSpaceID, pub::SpaceObj::SolarInfo& solarInfo)
 	return returnVal;
 }
 
-uint CreateSolar(wstring name, Vector pos, Matrix rot, uint iSystem, bool varyPos) {
+uint CreateSolar(std::wstring name, Vector pos, Matrix rot, uint iSystem, bool varyPos) {
 
 	SOLAR_ARCHTYPE_STRUCT arch = mapSolarArchtypes[name];
 
@@ -230,7 +230,7 @@ uint CreateSolar(wstring name, Vector pos, Matrix rot, uint iSystem, bool varyPo
 	si.Costume.accessories = 0;
 	si.iVoiceID = CreateID("atc_leg_m01");
 	si.iRep = arch.IFF;
-	string npcid = wstos(name).c_str() + std::to_string(spawnedSOLARs.size());
+	std::string npcid = wstos(name).c_str() + std::to_string(spawnedSOLARs.size());
 	strncpy_s(si.cNickName, sizeof(si.cNickName), npcid.c_str(), name.size() + spawnedSOLARs.size());
 
 	// Do we need to vary the starting position slightly? Useful when spawning multiple objects
@@ -283,7 +283,7 @@ uint CreateSolar(wstring name, Vector pos, Matrix rot, uint iSystem, bool varyPo
 //Client command processing
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void AdminCmd_SolarMake(CCmds* cmds, int Amount, wstring SolarType)
+void AdminCmd_SolarMake(CCmds* cmds, int Amount, std::wstring SolarType)
 {
 	if (!(cmds->rights & RIGHT_SUPERADMIN))
 	{
@@ -295,7 +295,7 @@ void AdminCmd_SolarMake(CCmds* cmds, int Amount, wstring SolarType)
 
 	SOLAR_ARCHTYPE_STRUCT arch;
 
-	map<wstring, SOLAR_ARCHTYPE_STRUCT>::iterator iter = mapSolarArchtypes.find(SolarType);
+	std::map<std::wstring, SOLAR_ARCHTYPE_STRUCT>::iterator iter = mapSolarArchtypes.find(SolarType);
 	if (iter != mapSolarArchtypes.end())
 	{
 		arch = iter->second;
@@ -335,7 +335,7 @@ void AdminCmd_SolarKill(CCmds* cmds)
 		return;
 	}
 
-	for (map<uint, wstring>::iterator i = spawnedSOLARs.begin();
+	for (std::map<uint, std::wstring>::iterator i = spawnedSOLARs.begin();
 		i != spawnedSOLARs.end(); ++i)
 	{
 		pub::SpaceObj::SetRelativeHealth(i->first, 0.0f);
@@ -348,7 +348,7 @@ void AdminCmd_SolarKill(CCmds* cmds)
 
 #define IS_CMD(a) !wscCmd.compare(L##a)
 
-bool ExecuteCommandString_Callback(CCmds* cmds, const wstring& wscCmd)
+bool ExecuteCommandString_Callback(CCmds* cmds, const std::wstring& wscCmd)
 {
 	returncode = DEFAULT_RETURNCODE;
 	if (IS_CMD("solarcreate"))
@@ -377,7 +377,7 @@ void LoadSettings()
 	FARPROC fpHkCreateSolar = (FARPROC)HkCreateSolar;
 	WriteProcMem(pAddressCreateSolar, &fpHkCreateSolar, 4);
 
-	for (map<int, SOLAR>::iterator i = startupSOLARs.begin();
+	for (std::map<int, SOLAR>::iterator i = startupSOLARs.begin();
 		i != startupSOLARs.end(); ++i)
 	{
 		CreateSolar(i->second.name, i->second.pos, i->second.rot, i->second.system, false);
