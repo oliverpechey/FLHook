@@ -12,7 +12,7 @@
 
 // globals:
 struct triggerAreasMapElement {
-	vector pos;
+	Vector pos;
 	int radius;				// The radius around the trigger which causes activation.
 	std::string system;		// The system our trigger resides in.
 	int triggerAction;		// Action to take on trigger activation as int:
