@@ -16,7 +16,7 @@ struct triggerAreasMapElement {
 	int y;
 	int z;
 	int radius;				// The radius around the trigger which causes activation.
-	std::wstring system;		// The system our trigger resides in.
+	std::string system;		// The system our trigger resides in.
 	int triggerAction;		// Action to take on trigger activation as int:
 							// 1 warp (in-system), 
 							// 2 beam (to base), 
@@ -34,13 +34,6 @@ int scanInterval = 60;	// How often to scan a player location (changes based on 
 int clientsActiveNow;
 int clientsToScan = 1;
 int thisClientIsOnline = 0;
-
-// holders for position and rotation data:
-Vector pos;
-Matrix rot;
-
-
-
 
 // We only want to check the position of one player at once to avoid causing instability due to a spike of cpu use.
 // To do this we'll use an incremental int to track which player we are currently checking:
@@ -76,7 +69,7 @@ void LoadSettings()
 						dataItem.y = ini.get_value_int(1);
 						dataItem.z = ini.get_value_int(2);
 						dataItem.radius = ini.get_value_int(3);
-						dataItem.system = stows(ini.get_value_string(4));
+						dataItem.system = ini.get_value_string(4);
 						triggerPoints.push_back(dataItem);
 					}					
 				}
@@ -84,21 +77,6 @@ void LoadSettings()
 		}
 		ini.close();
 	}
-}
-
-// Do every tick
-void HkTick()
-{
-	// check to see if it's time to check a player's position against trigger zones
-	if (tickClock > scanInterval)
-	{
-		scanTriggerZones();
-		tickClock = 0;
-	}
-	else {
-	tickClock++;
-	}
-	
 }
 
 void scanTriggerZones()
@@ -120,59 +98,53 @@ void scanTriggerZones()
 
 	// Get a list of all players and iterate through them
 	std::list<HKPLAYERINFO> players = HkGetPlayers();
-	HKPLAYERINFO p;
 
 	for (auto& p : players) 
 	{
 		if (clientsToScan > 0)
 		{
-			thisClientIsOnline = 0;
-			if (HkGetPlayerInfo((const wchar_t*)Players.GetActiveCharacterName(p.iClientID), p, false) == HKE_OK && p.iShip != 0)
-				thisClientIsOnline = 1;
-
-			if (thisClientIsOnline) // todo - if player is online (to scan the location of)
+			if (p.iShip != 0)
 			{
 				// scan the player against our defined zones
+				Vector pos;
+				Matrix rot;
 				pub::SpaceObj::GetLocation(p.iShip, pos, rot); // get position of player's ship as 'pos'
 
 				// loop through the systems in triggerPoints and see if the player is in one
-				for (int systemCounter = 0; systemCounter < triggerPoints.size; systemCounter++) {
-
-					if (HkGetPlayerSystem(clientsToScan) == triggerPoints[systemCounter].system) {
-						// they are in a warp system so now check their x position against the relevant trigger position data:
-
-
-						if (pos.x < triggerPoints[systemCounter].x + triggerPoints[systemCounter].radius) {
-							if (pos.x > triggerPoints[systemCounter].x - triggerPoints[systemCounter].radius) {
-								// they are within the x bounds, let's check the y bounds:
-
-								if (pos.y < triggerPoints[systemCounter].y + triggerPoints[systemCounter].radius) {
-									if (pos.y > triggerPoints[systemCounter].y - triggerPoints[systemCounter].radius) {
-										// they are within the y bounds, let's check the z bounds:
-
-										if (pos.z < triggerPoints[systemCounter].z + triggerPoints[systemCounter].radius) {
-											if (pos.z > triggerPoints[systemCounter].z - triggerPoints[systemCounter].radius) {
-												// they are within the z bounds, so they need to be warped!:
-
-												// Edit this to hook into the setpos function or steal it:
-												//setpos(clientToScan, destinationLocationsArray[0][system], destinationLocationsArray[1][system], destinationLocationsArray[2][system]);
-												HkMsgU(L"Setpos initiated");
-											}
-										}
-									}
-								}
-							}
+				for(auto& s : triggerPoints)
+				{
+					if (p.iSystem == CreateID(s.system.c_str()))
+					{ // they are in a warp system so now check their xyz position against the relevant trigger position data:
+						if (pos.x < s.x + s.radius && pos.x > s.x - s.radius && pos.y < s.y + s.radius && pos.y > s.y - s.radius && pos.z < s.z + s.radius && pos.z > s.z - s.radius)
+						{
+							// Edit this to hook into the setpos function or steal it:
+							//setpos(clientToScan, destinationLocationsArray[0][system], destinationLocationsArray[1][system], destinationLocationsArray[2][system]);
+							HkMsgU(L"Setpos initiated");
 						}
 					}
-				} // for loop end
-
-			} // if thisClientIsOnline
+				}
+			}
 
 			// Lastly, decrement the clientsToScan
 			clientsToScan--;
 			//HkMsgU(L"Scan performed");
 		}
 	}
+}
+
+// Do every tick
+void HkTick()
+{
+	// check to see if it's time to check a player's position against trigger zones
+	if (tickClock > scanInterval)
+	{
+		scanTriggerZones();
+		tickClock = 0;
+	}
+	else {
+		tickClock++;
+	}
+
 }
 
 void OnConnect() {
