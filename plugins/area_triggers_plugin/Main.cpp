@@ -144,21 +144,21 @@ void scanTriggerZones()
 				// they are in a warp system so now check their x position against the relevant trigger position data:
 
 
-				if (pos.x < (triggerPoints[systemCounter].x + triggerPoints[systemCounter].radius) {
-					if (pos.x > (triggerPoints[systemCounter].x - triggerPoints[systemCounter].radius) {
+				if (pos.x < triggerPoints[systemCounter].x + triggerPoints[systemCounter].radius) {
+					if (pos.x > triggerPoints[systemCounter].x - triggerPoints[systemCounter].radius) {
 						// they are within the x bounds, let's check the y bounds:
 
-						if (pos.y < ((triggerPoints[systemCounter].y + triggerPoints[systemCounter].radius) {
-							if (pos.y > ((triggerPoints[systemCounter].y - triggerPoints[systemCounter].radius) {
+						if (pos.y < triggerPoints[systemCounter].y + triggerPoints[systemCounter].radius) {
+							if (pos.y > triggerPoints[systemCounter].y - triggerPoints[systemCounter].radius) {
 								// they are within the y bounds, let's check the z bounds:
 
-								if (pos.z < ((triggerPoints[systemCounter].z + triggerPoints[systemCounter].radius) {
-									if (pos.z > ((triggerPoints[systemCounter].z - triggerPoints[systemCounter].radius) {
+								if (pos.z < triggerPoints[systemCounter].z + triggerPoints[systemCounter].radius) {
+									if (pos.z > triggerPoints[systemCounter].z - triggerPoints[systemCounter].radius) {
 										// they are within the z bounds, so they need to be warped!:
 
 										// Edit this to hook into the setpos function or steal it:
-										setpos(clientToScan, destinationLocationsArray[0][system], destinationLocationsArray[1][system], destinationLocationsArray[2][system]);
-											// that is, which player ship, x,y,z to warp to.
+										//setpos(clientToScan, destinationLocationsArray[0][system], destinationLocationsArray[1][system], destinationLocationsArray[2][system]);
+										HkMsgU(L"Setpos initiated");
 									}
 								}
 							}
