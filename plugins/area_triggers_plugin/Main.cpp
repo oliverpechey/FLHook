@@ -11,6 +11,8 @@ struct Action
 {
 	std::string type;
 	Vector pos;
+	uint base;
+	int health;
 };
 
 struct TriggerItem 
@@ -84,10 +86,12 @@ void LoadSettings()
 							if (ti.name == ini.get_value_string(0))
 							{
 								ti.action.type = "beam";
+								ti.action.base = CreateID(ini.get_value_string(1));
 							}
 							if (ti.name == ini.get_value_string(0))
 							{
 								ti.action.type = "heal";
+								ti.action.health = ini.get_value_int(1);
 							}
 							if (ti.name == ini.get_value_string(0))
 							{
@@ -127,10 +131,31 @@ void scanTriggerZones(uint iClientID)
 				{
 					if (ti.action.type == "warp")
 						HkRelocateClient(iClientID, ti.action.pos, rot);
+
 					if (ti.action.type == "beam")
-						// do something
+					{
+						Universe::IBase* base = Universe::get_base(ti.action.base);
+
+						pub::Player::ForceLand(iClientID, ti.action.base);
+
+						// if not in the same system, emulate F1 charload
+						if (base->iSystemID != iSystem)
+						{
+							Server.BaseEnter(ti.action.base, iClientID);
+							Server.BaseExit(ti.action.base, iClientID);
+							std::wstring wscCharFileName;
+							HkGetCharFileName(ARG_CLIENTID(iClientID), wscCharFileName);
+							wscCharFileName += L".fl";
+							CHARACTER_ID cID;
+							strcpy(cID.szCharFilename, wstos(wscCharFileName.substr(0, 14)).c_str());
+							Server.CharacterSelect(cID, iClientID);
+						}
+
+					}
+
 					if (ti.action.type == "heal")
-						// do something
+						pub::SpaceObj::SetRelativeHealth(iShip, ti.action.health);
+
 					if (ti.action.type == "kill")
 						pub::SpaceObj::Destroy(iShip, DestroyType::FUSE);
 				}
