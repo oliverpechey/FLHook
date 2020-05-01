@@ -146,13 +146,9 @@ void updateInterval()
 	if (clientsActiveNow)
 	{
 		if (clientsActiveNow < 30)
-		{
 			scanInterval = 60 / clientsActiveNow;
-		}
 		else
-		{
 			scanInterval = 1;
-		}
 
 		if (iClientID > clientsActiveNow)
 			iClientID = 1;
@@ -175,9 +171,8 @@ void HkTick()
 		updateInterval();
 		tickClock = 0;
 	}
-	else {
+	else
 		tickClock++;
-	}
 }
 
 void OnConnect() {
