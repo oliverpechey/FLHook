@@ -11,25 +11,23 @@
 #include <vector>
 
 // globals:
+struct Action {
+	std::string type;
+	Vector pos;
+};
+
 struct TriggerItem {
+	std::string name;
 	Vector pos;
 	int radius;				// The radius around the trigger which causes activation.
 	std::string system;		// The system our trigger resides in.
-	int triggerAction;		// Action to take on trigger activation as int:
-							// 1 warp (in-system), 
-							// 2 beam (to base), 
-							// 3 heal,
-							// 4 kill,
-							// 5 
-							// 6 
-							// 7 spawn npc group,
+	Action action;		// Action to take on trigger activation
 };
 
-std::vector< TriggerItem > triggerPoints; // map of trigger zone positions
+std::vector< TriggerItem > triggers; // map of trigger zone positions
 
 int tickClock = 0;		// Increments every server tick. 
 int scanInterval = 60;	// How often to scan a player location (changes based on player count).
-
 
 // We only want to check the position of one player at once to avoid causing instability due to a spike of cpu use.
 // To do this we'll use an incremental int to track which player we are currently checking:
@@ -60,14 +58,45 @@ void LoadSettings()
 					if (ini.is_value("zone"))
 					{ 
 						TriggerItem dataItem;
-						dataItem.triggerAction = ini.get_value_int(0);
+						dataItem.name = ini.get_value_string(0);
 						dataItem.pos.x = ini.get_value_int(1);
 						dataItem.pos.y = ini.get_value_int(2);
 						dataItem.pos.z = ini.get_value_int(3);
 						dataItem.radius = ini.get_value_int(4);
 						dataItem.system = ini.get_value_string(5);
-						triggerPoints.push_back(dataItem);
+						triggers.push_back(dataItem);
 					}					
+				}
+			}
+			if (ini.is_header("Actions"))
+			{
+				while (ini.read_value())
+				{
+					if (ini.is_value("warp"))
+					{
+						for (auto& ti : triggers)
+						{
+							if (ti.name == ini.get_value_string(0)) 
+							{
+								ti.action.type = "warp";
+								ti.action.pos.x = ini.get_value_int(1);
+								ti.action.pos.y = ini.get_value_int(2);
+								ti.action.pos.z = ini.get_value_int(3);
+							}
+							if (ti.name == ini.get_value_string(0))
+							{
+								ti.action.type = "beam";
+							}
+							if (ti.name == ini.get_value_string(0))
+							{
+								ti.action.type = "heal";
+							}
+							if (ti.name == ini.get_value_string(0))
+							{
+								ti.action.type = "kill";
+							}
+						}
+					}
 				}
 			}
 		}
@@ -104,7 +133,7 @@ void scanTriggerZones()
 	if (iShip != 0)
 	{
 		// loop through the systems in triggerPoints and see if the player is in one
-		for(auto& ti : triggerPoints)
+		for(auto& ti : triggers)
 		{
 			// scan the player against our defined zones
 			Vector pos;
@@ -118,25 +147,14 @@ void scanTriggerZones()
 			{ // they are in trigger system so now check their xyz position against the relevant trigger position data:
 				if (pos.x < ti.pos.x + ti.radius && pos.x > ti.pos.x - ti.radius && pos.y < ti.pos.y + ti.radius && pos.y > ti.pos.y - ti.radius && pos.z < ti.pos.z + ti.radius && pos.z > ti.pos.z - ti.radius)
 				{
-					switch (ti.triggerAction)
-					{
-					case 1:
-						// move
-						HkRelocateClient(iClientID, ti.pos, rot);
-						break;
-					case 2:
-						// beam
-						break;
-					case 3:
-						// heal
-						break;
-					case 4:
-						// kill
+					if (ti.action.type == "warp")
+						HkRelocateClient(iClientID, ti.action.pos, rot);
+					if (ti.action.type == "beam")
+						// do something
+					if (ti.action.type == "heal")
+						// do something
+					if (ti.action.type == "kill")
 						pub::SpaceObj::Destroy(iShip, DestroyType::FUSE);
-						break;
-					default:
-						break;
-					}
 				}
 			}
 		}
