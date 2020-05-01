@@ -104,7 +104,7 @@ void LoadSettings()
 	}
 }
 
-void scanTriggerZones()
+void updateInterval()
 {
 	// update our scanInterval based on how many players are online:
 	int clientsActiveNow = GetNumClients();
@@ -119,13 +119,18 @@ void scanTriggerZones()
 
 		if (iClientID > clientsActiveNow)
 			iClientID = 1;
-
-	} else {
+		scanTriggerZones(iClientID);
+		iClientID++;
+	}
+	else {
 		iClientID = 1;
 		scanInterval = 100;
 		return;
 	}
+}
 
+void scanTriggerZones(uint iClientID)
+{
 	uint iShip;
 	pub::Player::GetShip(iClientID, iShip);
 
@@ -159,8 +164,6 @@ void scanTriggerZones()
 			}
 		}
 	}
-	//HkMsgU(L"Scan performed");
-	iClientID++;
 }
 
 // Do every tick
@@ -169,7 +172,7 @@ void HkTick()
 	// check to see if it's time to check a player's position against trigger zones
 	if (tickClock > scanInterval)
 	{
-		scanTriggerZones();
+		updateInterval();
 		tickClock = 0;
 	}
 	else {
