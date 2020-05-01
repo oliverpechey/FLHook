@@ -72,11 +72,11 @@ void LoadSettings()
 					if (ini.is_value("zone"))
 					{ 
 						triggerAreasMapElement dataItem;
-						dataItem.x = ini.get_value_float(0);
-						dataItem.y = 2000;
-						dataItem.z = 2000;
-						dataItem.radius = 1000;
-						dataItem.system = L"Bw_01";
+						dataItem.x = ini.get_value_int(0);
+						dataItem.y = ini.get_value_int(1);
+						dataItem.z = ini.get_value_int(2);
+						dataItem.radius = ini.get_value_int(3);
+						dataItem.system = stows(ini.get_value_string(4));
 						triggerPoints.push_back(dataItem);
 					}					
 				}
