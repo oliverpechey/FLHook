@@ -68,7 +68,7 @@
     <ClInclude Include="PluginUtilities.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="area_triggers_plugin.ini" />
+    <None Include="area_triggers.cfg" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
