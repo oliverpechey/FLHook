@@ -6,17 +6,15 @@
 
 #include "Main.h"
 
-// includes for vector arrays:
-#include<iostream>
-#include <vector>
-
 // globals:
-struct Action {
+struct Action 
+{
 	std::string type;
 	Vector pos;
 };
 
-struct TriggerItem {
+struct TriggerItem 
+{
 	std::string name;
 	Vector pos;
 	int radius;				// The radius around the trigger which causes activation.
@@ -104,31 +102,6 @@ void LoadSettings()
 	}
 }
 
-void updateInterval()
-{
-	// update our scanInterval based on how many players are online:
-	int clientsActiveNow = GetNumClients();
-	if (clientsActiveNow)
-	{
-		if (clientsActiveNow < 30) {
-			scanInterval = 60 / clientsActiveNow;
-		}
-		else {
-			scanInterval = 1;
-		}
-
-		if (iClientID > clientsActiveNow)
-			iClientID = 1;
-		scanTriggerZones(iClientID);
-		iClientID++;
-	}
-	else {
-		iClientID = 1;
-		scanInterval = 100;
-		return;
-	}
-}
-
 void scanTriggerZones(uint iClientID)
 {
 	uint iShip;
@@ -163,6 +136,33 @@ void scanTriggerZones(uint iClientID)
 				}
 			}
 		}
+	}
+}
+
+void updateInterval()
+{
+	// update our scanInterval based on how many players are online:
+	int clientsActiveNow = GetNumClients();
+	if (clientsActiveNow)
+	{
+		if (clientsActiveNow < 30)
+		{
+			scanInterval = 60 / clientsActiveNow;
+		}
+		else
+		{
+			scanInterval = 1;
+		}
+
+		if (iClientID > clientsActiveNow)
+			iClientID = 1;
+		scanTriggerZones(iClientID);
+		iClientID++;
+	}
+	else {
+		iClientID = 1;
+		scanInterval = 100;
+		return;
 	}
 }
 
