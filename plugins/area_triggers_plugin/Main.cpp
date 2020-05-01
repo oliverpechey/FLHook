@@ -11,7 +11,7 @@
 #include <vector>
 
 // globals:
-struct triggerAreasMapElement {
+struct TriggerItem {
 	Vector pos;
 	int radius;				// The radius around the trigger which causes activation.
 	std::string system;		// The system our trigger resides in.
@@ -25,18 +25,15 @@ struct triggerAreasMapElement {
 							// 7 spawn npc group,
 };
 
-std::vector< triggerAreasMapElement > triggerPoints; // map of trigger zone positions
+std::vector< TriggerItem > triggerPoints; // map of trigger zone positions
 
 int tickClock = 0;		// Increments every server tick. 
 int scanInterval = 60;	// How often to scan a player location (changes based on player count).
-int clientsActiveNow;
-uint iClientID = 1;
-int thisClientIsOnline = 0;
+
 
 // We only want to check the position of one player at once to avoid causing instability due to a spike of cpu use.
 // To do this we'll use an incremental int to track which player we are currently checking:
-int currentPlayerToCheck = 1;
-// (we start at 1 because I assume the ids system starts there rather than 0)
+uint iClientID = 1;
 
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -62,12 +59,32 @@ void LoadSettings()
 				{
 					if (ini.is_value("zone"))
 					{ 
-						triggerAreasMapElement dataItem;
-						dataItem.pos.x = ini.get_value_int(0);
-						dataItem.pos.y = ini.get_value_int(1);
-						dataItem.pos.z = ini.get_value_int(2);
-						dataItem.radius = ini.get_value_int(3);
-						dataItem.system = ini.get_value_string(4);
+						TriggerItem dataItem;
+						dataItem.triggerAction = ini.get_value_int(0);
+
+						switch (dataItem.triggerAction) 
+						{
+						case 1:
+							//  warp (in-system)
+							dataItem.pos.x = ini.get_value_float(1);
+							dataItem.pos.y = ini.get_value_float(2);
+							dataItem.pos.z = ini.get_value_float(3);
+							dataItem.radius = ini.get_value_float(4);
+							dataItem.system = ini.get_value_string(5);
+							break;
+						case 2:
+							// beam (to base)
+							break;
+						case 3:
+							// heal
+							break;
+						case 4:
+							// kill
+							break;
+						default:
+							break;
+						}
+
 						triggerPoints.push_back(dataItem);
 					}					
 				}
@@ -77,10 +94,45 @@ void LoadSettings()
 	}
 }
 
+void Warp(TriggerItem ti, uint iClientID, uint iShip)
+{
+	// scan the player against our defined zones
+	Vector pos;
+	Matrix rot;
+	pub::SpaceObj::GetLocation(iShip, pos, rot); // get position of player's ship as 'pos'
+
+	uint iSystem;
+	pub::SpaceObj::GetSystem(iShip, iSystem);
+
+	if (iSystem == CreateID(ti.system.c_str()))
+	{ // they are in a warp system so now check their xyz position against the relevant trigger position data:
+		if (pos.x < ti.pos.x + ti.radius && pos.x > ti.pos.x - ti.radius && pos.y < ti.pos.y + ti.radius && pos.y > ti.pos.y - ti.radius && pos.z < ti.pos.z + ti.radius && pos.z > ti.pos.z - ti.radius)
+		{
+			// beam player
+			HkRelocateClient(iClientID, ti.pos, rot);
+		}
+	}
+}
+
+void Beam(TriggerItem ti, uint iClientID, uint iShip)
+{
+
+}
+
+void Heal(TriggerItem ti, uint iClientID, uint iShip)
+{
+
+}
+
+void Kill(TriggerItem ti, uint iClientID, uint iShip)
+{
+
+}
+
 void scanTriggerZones()
 {
 	// update our scanInterval based on how many players are online:
-	clientsActiveNow = GetNumClients();
+	int clientsActiveNow = GetNumClients();
 	if (clientsActiveNow)
 	{
 		if (clientsActiveNow < 30) {
@@ -91,10 +143,10 @@ void scanTriggerZones()
 		}
 
 		if (iClientID > clientsActiveNow)
-			iClientID = 0;
+			iClientID = 1;
 
 	} else {
-		iClientID = 0;
+		iClientID = 1;
 		scanInterval = 100;
 		return;
 	}
@@ -102,26 +154,28 @@ void scanTriggerZones()
 	uint iShip;
 	pub::Player::GetShip(iClientID, iShip);
 
+	// is player in space?
 	if (iShip != 0)
 	{
-		// scan the player against our defined zones
-		Vector pos;
-		Matrix rot;
-		pub::SpaceObj::GetLocation(iShip, pos, rot); // get position of player's ship as 'pos'
-
-		uint iSystem;
-		pub::SpaceObj::GetSystem(iShip, iSystem);
-
 		// loop through the systems in triggerPoints and see if the player is in one
 		for(auto& s : triggerPoints)
 		{
-			if (iSystem == CreateID(s.system.c_str()))
-			{ // they are in a warp system so now check their xyz position against the relevant trigger position data:
-				if (pos.x < s.pos.x + s.radius && pos.x > s.pos.x - s.radius && pos.y < s.pos.y + s.radius && pos.y > s.pos.y - s.radius && pos.z < s.pos.z + s.radius && pos.z > s.pos.z - s.radius)
-				{
-					// beam player
-					HkRelocateClient(iClientID, s.pos, rot);
-				}
+			switch (s.triggerAction)
+			{
+			case 1:
+				Warp(s, iClientID, iShip);
+				break;
+			case 2:
+				Beam(s, iClientID, iShip);
+				break;
+			case 3:
+				Heal(s, iClientID, iShip);
+				break;
+			case 4:
+				Kill(s, iClientID, iShip);
+				break;
+			default:
+				break;
 			}
 		}
 	}
