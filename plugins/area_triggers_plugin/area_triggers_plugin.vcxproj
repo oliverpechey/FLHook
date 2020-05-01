@@ -12,7 +12,7 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{1B6B6B95-3547-4B86-A276-CDEA42D25CAF}</ProjectGuid>
-    <RootNamespace>area_triggers_plugin</RootNamespace>
+    <RootNamespace>area_triggers</RootNamespace>
     <Keyword>Win32Proj</Keyword>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
     <ProjectName>Area Triggers Plugin</ProjectName>
@@ -47,7 +47,7 @@
     <TargetName>area_triggers_plugin</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <TargetName>area_triggers_plugin</TargetName>
+    <TargetName>area_triggers</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -56,6 +56,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="PluginUtilities.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\project\FLHook.vcxproj">
@@ -64,6 +65,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Main.h" />
+    <ClInclude Include="PluginUtilities.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="area_triggers_plugin.ini" />
