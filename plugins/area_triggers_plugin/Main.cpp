@@ -61,30 +61,11 @@ void LoadSettings()
 					{ 
 						TriggerItem dataItem;
 						dataItem.triggerAction = ini.get_value_int(0);
-
-						switch (dataItem.triggerAction) 
-						{
-						case 1:
-							//  warp (in-system)
-							dataItem.pos.x = ini.get_value_float(1);
-							dataItem.pos.y = ini.get_value_float(2);
-							dataItem.pos.z = ini.get_value_float(3);
-							dataItem.radius = ini.get_value_float(4);
-							dataItem.system = ini.get_value_string(5);
-							break;
-						case 2:
-							// beam (to base)
-							break;
-						case 3:
-							// heal
-							break;
-						case 4:
-							// kill
-							break;
-						default:
-							break;
-						}
-
+						dataItem.pos.x = ini.get_value_int(1);
+						dataItem.pos.y = ini.get_value_int(2);
+						dataItem.pos.z = ini.get_value_int(3);
+						dataItem.radius = ini.get_value_int(4);
+						dataItem.system = ini.get_value_string(5);
 						triggerPoints.push_back(dataItem);
 					}					
 				}
@@ -92,41 +73,6 @@ void LoadSettings()
 		}
 		ini.close();
 	}
-}
-
-void Warp(TriggerItem ti, uint iClientID, uint iShip)
-{
-	// scan the player against our defined zones
-	Vector pos;
-	Matrix rot;
-	pub::SpaceObj::GetLocation(iShip, pos, rot); // get position of player's ship as 'pos'
-
-	uint iSystem;
-	pub::SpaceObj::GetSystem(iShip, iSystem);
-
-	if (iSystem == CreateID(ti.system.c_str()))
-	{ // they are in a warp system so now check their xyz position against the relevant trigger position data:
-		if (pos.x < ti.pos.x + ti.radius && pos.x > ti.pos.x - ti.radius && pos.y < ti.pos.y + ti.radius && pos.y > ti.pos.y - ti.radius && pos.z < ti.pos.z + ti.radius && pos.z > ti.pos.z - ti.radius)
-		{
-			// beam player
-			HkRelocateClient(iClientID, ti.pos, rot);
-		}
-	}
-}
-
-void Beam(TriggerItem ti, uint iClientID, uint iShip)
-{
-
-}
-
-void Heal(TriggerItem ti, uint iClientID, uint iShip)
-{
-
-}
-
-void Kill(TriggerItem ti, uint iClientID, uint iShip)
-{
-
 }
 
 void scanTriggerZones()
@@ -158,24 +104,40 @@ void scanTriggerZones()
 	if (iShip != 0)
 	{
 		// loop through the systems in triggerPoints and see if the player is in one
-		for(auto& s : triggerPoints)
+		for(auto& ti : triggerPoints)
 		{
-			switch (s.triggerAction)
-			{
-			case 1:
-				Warp(s, iClientID, iShip);
-				break;
-			case 2:
-				Beam(s, iClientID, iShip);
-				break;
-			case 3:
-				Heal(s, iClientID, iShip);
-				break;
-			case 4:
-				Kill(s, iClientID, iShip);
-				break;
-			default:
-				break;
+			// scan the player against our defined zones
+			Vector pos;
+			Matrix rot;
+			pub::SpaceObj::GetLocation(iShip, pos, rot); // get position of player's ship as 'pos'
+
+			uint iSystem;
+			pub::SpaceObj::GetSystem(iShip, iSystem);
+
+			if (iSystem == CreateID(ti.system.c_str()))
+			{ // they are in trigger system so now check their xyz position against the relevant trigger position data:
+				if (pos.x < ti.pos.x + ti.radius && pos.x > ti.pos.x - ti.radius && pos.y < ti.pos.y + ti.radius && pos.y > ti.pos.y - ti.radius && pos.z < ti.pos.z + ti.radius && pos.z > ti.pos.z - ti.radius)
+				{
+					switch (ti.triggerAction)
+					{
+					case 1:
+						// move
+						HkRelocateClient(iClientID, ti.pos, rot);
+						break;
+					case 2:
+						// beam
+						break;
+					case 3:
+						// heal
+						break;
+					case 4:
+						// kill
+						pub::SpaceObj::Destroy(iShip, DestroyType::FUSE);
+						break;
+					default:
+						break;
+					}
+				}
 			}
 		}
 	}
