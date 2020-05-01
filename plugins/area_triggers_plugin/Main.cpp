@@ -16,7 +16,7 @@ struct triggerAreasMapElement {
 	int y;
 	int z;
 	int radius;				// The radius around the trigger which causes activation.
-	std::string system;		// The system our trigger resides in.
+	std::wstring system;		// The system our trigger resides in.
 	int triggerAction;		// Action to take on trigger activation as int:
 							// 1 warp (in-system), 
 							// 2 beam (to base), 
@@ -32,21 +32,15 @@ std::vector< triggerAreasMapElement > triggerPoints; // map of trigger zone posi
 int tickClock = 0;		// Increments every server tick. 
 int scanInterval = 60;	// How often to scan a player location (changes based on player count).
 int clientsActiveNow;
-int clientToScan;
+int clientToScan = 1;
+int thisClientIsOnline = 0;
 
-// We want to track which systems have warp trigger areas in them
-// to optimise our checking code and avoid unneeded checks using an array.
-// Let's assume we have 4 systems with triggers in them:
-std::string activeWarpSystems[4] = { "Bw_01", "Ew_02", "Li_01", "Br_03" };
-int activeWarpSystemsCount = 4; // we could use some count keyword hax for this but this is probably faster (maybe it should even be a constant..)
+// holders for position and rotation data:
+Vector pos;
+Matrix rot;
 
-// the last bit of data to define is our destinations position data:
-// as above we have an x, y and z and slots for 4 sets of locations:
-int destinationLocationsArray[3][4] = {
-   {0, 1, 2, 3} ,   /*  initializers for x indexed by 0 */
-   {4, 5, 6, 7} ,   /*  initializers for y indexed by 1 */
-   {8, 9, 10, 11}   /*  initializers for z indexed by 2 */
-};
+
+
 
 // We only want to check the position of one player at once to avoid causing instability due to a spike of cpu use.
 // To do this we'll use an incremental int to track which player we are currently checking:
@@ -94,15 +88,16 @@ void LoadSettings()
 
 	// setup variable values:
 
-	// example 
+	// example zone data to test with:
 	triggerAreasMapElement dataItem;
-	dataItem.x = 438626262;
-	dataItem.y = 4252525225;
-	dataItem.z = 52525252;
+	dataItem.x = 2000;
+	dataItem.y = 2000;
+	dataItem.z = 2000;
+	dataItem.radius = 1000;
+	dataItem.system = L"Bw_01";
 	triggerPoints.push_back(dataItem);
 
-
-
+	
 
 }
 
@@ -137,14 +132,58 @@ void scanTriggerZones()
 	} else {
 		scanInterval = 100;
 	}
+	/////////////////////////////////////////////////////////////////
+	HKPLAYERINFO p;
+	if (HkGetPlayerInfo((const wchar_t*)Players.GetActiveCharacterName(iClientID), p, false) != HKE_OK || p.iShip == 0)
+	{
+		//PrintUserCmdText(iClientID, L"ERR Not in space");
+		thisClientIsOnline = 0;
+	}
+	else {
+		thisClientIsOnline = 1;
+	}
 
 	
-	if (clientToScan) // if there's a player to scan the location of
+	///////////////////////////////////////////////////////////////////
+	
+	if (thisClientIsOnline) // todo - if player is online (to scan the location of)
 	{
 
-		// scan them here
-	
-	
+		// scan the player against our defined zones
+		pub::SpaceObj::GetLocation(p.iShip, pos, rot); // get position of player's ship as 'pos'
+
+		// loop through the systems in triggerPoints and see if the player is in one
+		for (int systemCounter = 0; systemCounter < triggerPoints.size; systemCounter++) {
+
+			if ( HkGetPlayerSystem(clientToScan) == triggerPoints[systemCounter].system ) {
+				// they are in a warp system so now check their x position against the relevant trigger position data:
+
+
+				if (pos.x < (triggerPoints[systemCounter].x + triggerPoints[systemCounter].radius) {
+					if (pos.x > (triggerPoints[systemCounter].x - triggerPoints[systemCounter].radius) {
+						// they are within the x bounds, let's check the y bounds:
+
+						if (pos.y < ((triggerPoints[systemCounter].y + triggerPoints[systemCounter].radius) {
+							if (pos.y > ((triggerPoints[systemCounter].y - triggerPoints[systemCounter].radius) {
+								// they are within the y bounds, let's check the z bounds:
+
+								if (pos.z < ((triggerPoints[systemCounter].z + triggerPoints[systemCounter].radius) {
+									if (pos.z > ((triggerPoints[systemCounter].z - triggerPoints[systemCounter].radius) {
+										// they are within the z bounds, so they need to be warped!:
+
+										// Edit this to hook into the setpos function or steal it:
+										setpos(clientToScan, destinationLocationsArray[0][system], destinationLocationsArray[1][system], destinationLocationsArray[2][system]);
+											// that is, which player ship, x,y,z to warp to.
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		} // for loop end
+
+	} // if thisClientIsOnline
 
 		// Lastly, increment the client we are scanning for the next check:
 		if (clientToScan < clientsActiveNow)
@@ -155,11 +194,7 @@ void scanTriggerZones()
 			clientToScan = 1;
 		}
 
-	}
-
-	//HkGetPlayerSystem(uint iClientID);
-
-	HkMsgU(L"Scan performed");
+	//HkMsgU(L"Scan performed");
 
 }
 
