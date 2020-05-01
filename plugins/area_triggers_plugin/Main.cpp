@@ -58,47 +58,32 @@ void LoadSettings()
 	// The path to the configuration file.
 	char szCurDir[MAX_PATH];
 	GetCurrentDirectory(sizeof(szCurDir), szCurDir);
-	std::string configFile = std::string(szCurDir) + "\\flhook_plugins\\area_triggers_plugin.ini";
+	std::string configFile = std::string(szCurDir) + "\\flhook_plugins\\area_triggers.cfg";
 
 	INI_Reader ini;
 	if (ini.open(configFile.c_str(), false))
 	{
 		while (ini.read_header())
 		{	
-			if (ini.is_header("General"))
+			if (ini.is_header("Zones"))
 			{
 				while (ini.read_value())
 				{
-					if (ini.is_value("debug"))
+					if (ini.is_value("zone"))
 					{ 
-						set_iPluginDebug = ini.get_value_int(0);
+						triggerAreasMapElement dataItem;
+						dataItem.x = ini.get_value_float(0);
+						dataItem.y = 2000;
+						dataItem.z = 2000;
+						dataItem.radius = 1000;
+						dataItem.system = L"Bw_01";
+						triggerPoints.push_back(dataItem);
 					}					
 				}
 			}
 		}
-
-		if (set_iPluginDebug&1)
-		{
-			ConPrint(L"Debug\n");
-		}
-
 		ini.close();
 	}
-
-
-	// setup variable values:
-
-	// example zone data to test with:
-	triggerAreasMapElement dataItem;
-	dataItem.x = 2000;
-	dataItem.y = 2000;
-	dataItem.z = 2000;
-	dataItem.radius = 1000;
-	dataItem.system = L"Bw_01";
-	triggerPoints.push_back(dataItem);
-
-	
-
 }
 
 // Do every tick
