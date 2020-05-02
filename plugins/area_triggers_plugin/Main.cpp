@@ -120,7 +120,7 @@ void LoadSettings()
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
-void scanTriggerZones(uint iClientID)
+void scanTriggerZones(uint iClientID)	// Scan player's position and if inside a zone trigger the zone's action on them
 {
 	if (HkIsValidClientID(iClientID))
 	{
@@ -187,10 +187,8 @@ void scanTriggerZones(uint iClientID)
 	}
 }
 
-///////////////////////////////////////////////////////////////////////////////////////
 
-// Update our scanInterval based on how many players are online. Return true if players are online
-bool updateInterval()
+bool updateInterval()	// Update scanInterval based on how many players are online. Return true if players are online
 {
 	int clientsActiveNow = GetNumClients();
 	if (clientsActiveNow)
@@ -224,8 +222,8 @@ void OnConnect()
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
-// Check to see if the scanInterval has elapsed
-void HkTick()
+
+void HkTick()	// Check to see if the scanInterval has elapsed every tick, and if so scan the next player online
 {
 	if (tickClock > scanInterval)
 	{
