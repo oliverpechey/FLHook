@@ -14,6 +14,7 @@ struct Action
 	uint base;
 	int health;
 	std::wstring text;
+	uint sound;
 };
 
 struct TriggerItem 
@@ -101,6 +102,11 @@ void LoadSettings()
 								ti.action.type = "chat";
 								ti.action.text = stows(ini.get_value_string());
 							}
+							if (ini.is_value("sound"))
+							{
+								ti.action.type = "sound";
+								ti.action.sound = CreateID(ini.get_value_string(1));
+							}
 						}
 					}
 				}
@@ -167,6 +173,9 @@ void scanTriggerZones(uint iClientID)
 					
 					if (ti.action.type == "chat")
 						PrintUserCmdText(iClientID, ti.action.text);
+
+					if (ti.action.type == "sound")
+						pub::Audio::PlaySoundEffect(iClientID, ti.action.sound);
 				}
 			}
 		}
