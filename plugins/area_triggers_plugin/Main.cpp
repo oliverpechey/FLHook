@@ -120,62 +120,65 @@ void LoadSettings()
 
 void scanTriggerZones(uint iClientID)
 {
-	// Convert iClientID to iShip and see if in space
-	uint iShip;
-	pub::Player::GetShip(iClientID, iShip);
-
-	if (iShip != 0)
+	if (HkIsValidClientID(iClientID))
 	{
-		// Get ship system and position
-		Vector pos;
-		Matrix rot;
-		uint iSystem;
-		pub::SpaceObj::GetLocation(iShip, pos, rot);
-		pub::SpaceObj::GetSystem(iShip, iSystem);
+		// Convert iClientID to iShip and see if in space
+		uint iShip;
+		pub::Player::GetShip(iClientID, iShip);
 
-		// Loop through our triggers
-		for(auto& ti : triggers)
+		if (iShip != 0)
 		{
-			// Check to see if they are in the trigger system and within radius of trigger position
-			if (iSystem == CreateID(ti.system.c_str()))
+			// Get ship system and position
+			Vector pos;
+			Matrix rot;
+			uint iSystem;
+			pub::SpaceObj::GetLocation(iShip, pos, rot);
+			pub::SpaceObj::GetSystem(iShip, iSystem);
+
+			// Loop through our triggers
+			for (auto& ti : triggers)
 			{
-				if (pos.x < ti.pos.x + ti.radius && pos.x > ti.pos.x - ti.radius && pos.y < ti.pos.y + ti.radius && pos.y > ti.pos.y - ti.radius && pos.z < ti.pos.z + ti.radius && pos.z > ti.pos.z - ti.radius)
+				// Check to see if they are in the trigger system and within radius of trigger position
+				if (iSystem == CreateID(ti.system.c_str()))
 				{
-					// Check what the trigger action is and execute it
-					if (ti.action.type == "warp")
-						HkRelocateClient(iClientID, ti.action.pos, rot);
-
-					if (ti.action.type == "beam")
+					if (pos.x < ti.pos.x + ti.radius && pos.x > ti.pos.x - ti.radius && pos.y < ti.pos.y + ti.radius && pos.y > ti.pos.y - ti.radius && pos.z < ti.pos.z + ti.radius && pos.z > ti.pos.z - ti.radius)
 					{
-						Universe::IBase* base = Universe::get_base(ti.action.base);
-						pub::Player::ForceLand(iClientID, ti.action.base);
+						// Check what the trigger action is and execute it
+						if (ti.action.type == "warp")
+							HkRelocateClient(iClientID, ti.action.pos, rot);
 
-						// If not in the same system, emulate F1 charload
-						if (base->iSystemID != iSystem)
+						if (ti.action.type == "beam")
 						{
-							Server.BaseEnter(ti.action.base, iClientID);
-							Server.BaseExit(ti.action.base, iClientID);
-							std::wstring wscCharFileName;
-							HkGetCharFileName(ARG_CLIENTID(iClientID), wscCharFileName);
-							wscCharFileName += L".fl";
-							CHARACTER_ID cID;
-							strcpy(cID.szCharFilename, wstos(wscCharFileName.substr(0, 14)).c_str());
-							Server.CharacterSelect(cID, iClientID);
+							Universe::IBase* base = Universe::get_base(ti.action.base);
+							pub::Player::ForceLand(iClientID, ti.action.base);
+
+							// If not in the same system, emulate F1 charload
+							if (base->iSystemID != iSystem)
+							{
+								Server.BaseEnter(ti.action.base, iClientID);
+								Server.BaseExit(ti.action.base, iClientID);
+								std::wstring wscCharFileName;
+								HkGetCharFileName(ARG_CLIENTID(iClientID), wscCharFileName);
+								wscCharFileName += L".fl";
+								CHARACTER_ID cID;
+								strcpy(cID.szCharFilename, wstos(wscCharFileName.substr(0, 14)).c_str());
+								Server.CharacterSelect(cID, iClientID);
+							}
+
 						}
 
+						if (ti.action.type == "heal")
+							pub::SpaceObj::SetRelativeHealth(iShip, ti.action.health);
+
+						if (ti.action.type == "kill")
+							pub::SpaceObj::Destroy(iShip, DestroyType::FUSE);
+
+						if (ti.action.type == "chat")
+							PrintUserCmdText(iClientID, ti.action.text);
+
+						if (ti.action.type == "sound")
+							pub::Audio::PlaySoundEffect(iClientID, ti.action.sound);
 					}
-
-					if (ti.action.type == "heal")
-						pub::SpaceObj::SetRelativeHealth(iShip, ti.action.health);
-
-					if (ti.action.type == "kill")
-						pub::SpaceObj::Destroy(iShip, DestroyType::FUSE);
-					
-					if (ti.action.type == "chat")
-						PrintUserCmdText(iClientID, ti.action.text);
-
-					if (ti.action.type == "sound")
-						pub::Audio::PlaySoundEffect(iClientID, ti.action.sound);
 				}
 			}
 		}
@@ -195,7 +198,7 @@ bool updateInterval()
 		else
 			scanInterval = 1;
 
-		if (iClientID > clientsActiveNow)
+		if (iClientID > MAX_CLIENT_ID)
 			iClientID = 1;
 
 		return true;
