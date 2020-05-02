@@ -104,6 +104,8 @@ void LoadSettings()
 	ini.close();
 }
 
+///////////////////////////////////////////////////////////////////////////////////////
+
 void scanTriggerZones(uint iClientID)
 {
 	// Convert iClientID to iShip and see if in space
@@ -162,9 +164,11 @@ void scanTriggerZones(uint iClientID)
 	}
 }
 
+///////////////////////////////////////////////////////////////////////////////////////
+
+// Update our scanInterval based on how many players are online. Return true if players are online
 bool updateInterval()
 {
-	// Update our scanInterval based on how many players are online:
 	int clientsActiveNow = GetNumClients();
 	if (clientsActiveNow)
 	{
@@ -187,7 +191,11 @@ bool updateInterval()
 	}
 }
 
+///////////////////////////////////////////////////////////////////////////////////////
+
 // TODO Hook into the login of a player to reset scanInterval to 0
+
+///////////////////////////////////////////////////////////////////////////////////////
 
 // Check to see if the scanInterval has elapsed
 void HkTick()
