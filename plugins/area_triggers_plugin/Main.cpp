@@ -12,7 +12,7 @@
 struct Action				// ɐʇɐp uoıʇɔɐ ɹoɟ ɹǝuıɐʇuoɔ
 {
 	std::string type;		// ɯɹoɟɹǝd oʇ uoıʇɔɐ ɟo ǝdʎʇ ǝɥʇ
-	Vector pos;				// (sdɹɐʍ ɹoɟ)  uoıʇɔɐ ǝɥʇ ɟo uoıʇısod p3
+	Vector pos;				// (sdɹɐʍ ɹoɟ) uoıʇɔɐ ǝɥʇ ɟo uoıʇısod p3
 	uint base;				// (oʇ ƃuıɯɐǝq ɹoɟ pǝsn) pı ǝsɐq
 	int health;				// ¿
 	std::wstring text;		// ¿ʎɐןdsıp oʇ ʇxǝʇ
