@@ -13,6 +13,7 @@ struct Action
 	Vector pos;
 	uint base;
 	int health;
+	wstring text;
 };
 
 struct TriggerItem 
@@ -95,6 +96,11 @@ void LoadSettings()
 							{
 								ti.action.type = "kill";
 							}
+							if (ini.is_value("chat"))
+							{
+								ti.action.type = "chat";
+								ti.action.text = stows(ini.get_value_string());
+							}
 						}
 					}
 				}
@@ -158,6 +164,9 @@ void scanTriggerZones(uint iClientID)
 
 					if (ti.action.type == "kill")
 						pub::SpaceObj::Destroy(iShip, DestroyType::FUSE);
+					
+					if (ti.action.type == "chat")
+						PrintUserCmdText(iClientID, ti.action.text);
 				}
 			}
 		}
