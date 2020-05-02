@@ -28,7 +28,7 @@ struct TriggerItem			// ɐʇɐp ǝuoz ɹǝƃƃıɹʇ ɹoɟ ɹǝuıɐʇuoɔ
 	Action action;			// Action to take on trigger activation
 };
 
-std::vector< TriggerItem > triggers; // map of trigger zone positions
+std::vector< TriggerItem > triggers; // List of trigger zone positions
 
 int tickClock = 0;		// Increments every server tick (up to scan interval). 
 int scanInterval = 60;	// How often to scan a player location (changes based on player count).
@@ -37,7 +37,26 @@ int scanInterval = 60;	// How often to scan a player location (changes based on 
 // This tracks which client to scan next tick
 uint iClientID = 1;
 
-///////////////////////////////////////////////////////////////////////////////////////
+std::list<HKPLAYERINFO> HkGetPlayers()
+{
+	std::list<HKPLAYERINFO> lstRet;
+	std::wstring wscRet;
+
+	struct PlayerData* pPD = 0;
+	while (pPD = Players.traverse_active(pPD))
+	{
+		uint iClientID = HkGetClientIdFromPD(pPD);
+
+		if (HkIsInCharSelectMenu(iClientID)) // So doesn't return players on login screen?
+			continue;
+
+		HKPLAYERINFO pi;
+		HkGetPlayerInfo(ARG_CLIENTID(iClientID), pi, false);
+		lstRet.push_back(pi);
+	}
+
+	return lstRet;
+}
 
 void LoadSettings()
 {
@@ -118,7 +137,6 @@ void LoadSettings()
 	ini.close();
 }
 
-///////////////////////////////////////////////////////////////////////////////////////
 
 void scanTriggerZones(uint iClientID)	// Scan player's position and if inside a zone trigger the zone's action on them
 {
