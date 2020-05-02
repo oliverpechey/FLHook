@@ -162,36 +162,42 @@ void scanTriggerZones(uint iClientID)
 	}
 }
 
-void updateInterval()
+bool updateInterval()
 {
-	// update our scanInterval based on how many players are online:
+	// Update our scanInterval based on how many players are online:
 	int clientsActiveNow = GetNumClients();
 	if (clientsActiveNow)
 	{
 		if (clientsActiveNow < 30)
-			scanInterval = 60 / clientsActiveNow;
+			scanInterval = 60 / clientsActiveNow; // TODO Replace 30 and 60 with max player count ( / 2 )
 		else
 			scanInterval = 1;
 
 		if (iClientID > clientsActiveNow)
 			iClientID = 1;
-		scanTriggerZones(iClientID);
-		iClientID++;
+
+		return true;
+		
 	}
+	// No clients are online so set large ScanInterval to reduce CPU load
 	else {
 		iClientID = 1;
 		scanInterval = 100;
-		return;
+		return false;
 	}
 }
 
-// Do every tick
+// TODO Hook into the login of a player to reset scanInterval to 0
+
+// Check to see if the scanInterval has elapsed
 void HkTick()
 {
-	// check to see if it's time to check a player's position against trigger zones
 	if (tickClock > scanInterval)
 	{
-		updateInterval();
+		if (updateInterval()) {
+			scanTriggerZones(iClientID);
+			iClientID++;
+		}
 		tickClock = 0;
 	}
 	else
@@ -220,8 +226,8 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 EXPORT PLUGIN_INFO* Get_PluginInfo()
 {
 	PLUGIN_INFO* p_PI = new PLUGIN_INFO();
-	p_PI->sName = "area_triggers_plugin";
-	p_PI->sShortName = "area_triggers_plugin";
+	p_PI->sName = "area_triggers";
+	p_PI->sShortName = "area_triggers";
 	p_PI->bMayPause = true;
 	p_PI->bMayUnload = true;
 	p_PI->ePluginReturnCode = &returncode;
