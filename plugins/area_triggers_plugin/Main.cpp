@@ -13,7 +13,7 @@ struct Action
 	Vector pos;
 	uint base;
 	int health;
-	wstring text;
+	std::wstring text;
 };
 
 struct TriggerItem 
