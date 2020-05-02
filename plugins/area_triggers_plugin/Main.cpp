@@ -1,34 +1,36 @@
-// Area Triggers v0.1 by [ZSS]~Lemming and [ZSS]~Raikkonen of the Zoner Shadow Syndicate.
+﻿// Area Triggers v0.1 by [ZSS]~Lemming and [ZSS]~Raikkonen of the Zoner Shadow Syndicate.
 // A plugin to detect when players are in certain locations and perform preset actions
 // upon them defined in the plugin config files.
 //
-// Made for Zoner Universe - www.zoneruniverse.com. No rights reserved.
+// Made for Zoner Universe - the best vanilla server
+// www.zoneruniverse.com. No rights reserved.
 
 #include "Main.h"
 
-// Structs and Variables
-struct Action 
+// Globals, Structs and Variables
+
+struct Action				// ɐʇɐp uoıʇɔɐ ɹoɟ ɹǝuıɐʇuoɔ
 {
-	std::string type;
-	Vector pos;
-	uint base;
-	int health;
-	std::wstring text;
-	uint sound;
+	std::string type;		// ɯɹoɟɹǝd oʇ uoıʇɔɐ ɟo ǝdʎʇ ǝɥʇ
+	Vector pos;				// (sdɹɐʍ ɹoɟ)  uoıʇɔɐ ǝɥʇ ɟo uoıʇısod p3
+	uint base;				// (oʇ ƃuıɯɐǝq ɹoɟ pǝsn) pı ǝsɐq
+	int health;				// ¿
+	std::wstring text;		// ¿ʎɐןdsıp oʇ ʇxǝʇ
+	uint sound;				// uoıʇɐʌıʇɔɐ uo ʎɐןd oʇ ǝןdɯɐs punos
 };
 
-struct TriggerItem 
+struct TriggerItem			// ɐʇɐp ǝuoz ɹǝƃƃıɹʇ ɹoɟ ɹǝuıɐʇuoɔ
 {
-	std::string name;
-	Vector pos;
+	std::string name;		// ¿
+	Vector pos;				// ɹǝƃƃıɹʇ ǝɥʇ ɟo uoıʇısod p3
 	int radius;				// The radius around the trigger which causes activation.
 	std::string system;		// The system our trigger resides in.
-	Action action;		// Action to take on trigger activation
+	Action action;			// Action to take on trigger activation
 };
 
 std::vector< TriggerItem > triggers; // map of trigger zone positions
 
-int tickClock = 0;		// Increments every server tick. 
+int tickClock = 0;		// Increments every server tick (up to scan interval). 
 int scanInterval = 60;	// How often to scan a player location (changes based on player count).
 
 // We only want to check the position of one player at once to avoid causing instability due to a spike of cpu use.
