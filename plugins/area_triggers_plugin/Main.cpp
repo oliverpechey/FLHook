@@ -6,7 +6,7 @@
 
 #include "Main.h"
 
-// globals:
+// Structs and Variables
 struct Action 
 {
 	std::string type;
@@ -30,13 +30,11 @@ int tickClock = 0;		// Increments every server tick.
 int scanInterval = 60;	// How often to scan a player location (changes based on player count).
 
 // We only want to check the position of one player at once to avoid causing instability due to a spike of cpu use.
-// To do this we'll use an incremental int to track which player we are currently checking:
+// This tracks which client to scan next tick
 uint iClientID = 1;
-
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
-// Load configuration file
 void LoadSettings()
 {
 	returncode = DEFAULT_RETURNCODE;
@@ -72,28 +70,28 @@ void LoadSettings()
 			{
 				while (ini.read_value())
 				{
-					if (ini.is_value("warp"))
+					for (auto& ti : triggers)
 					{
-						for (auto& ti : triggers)
+						if (ti.name == ini.get_value_string(0))
 						{
-							if (ti.name == ini.get_value_string(0)) 
+							if (ini.is_value("warp"))
 							{
 								ti.action.type = "warp";
 								ti.action.pos.x = ini.get_value_int(1);
 								ti.action.pos.y = ini.get_value_int(2);
 								ti.action.pos.z = ini.get_value_int(3);
 							}
-							if (ti.name == ini.get_value_string(0))
+							if (ini.is_value("beam"))
 							{
 								ti.action.type = "beam";
 								ti.action.base = CreateID(ini.get_value_string(1));
 							}
-							if (ti.name == ini.get_value_string(0))
+							if (ini.is_value("heal"))
 							{
 								ti.action.type = "heal";
 								ti.action.health = ini.get_value_int(1);
 							}
-							if (ti.name == ini.get_value_string(0))
+							if (ini.is_value("kill"))
 							{
 								ti.action.type = "kill";
 							}
@@ -102,43 +100,43 @@ void LoadSettings()
 				}
 			}
 		}
-		ini.close();
 	}
+	ini.close();
 }
 
 void scanTriggerZones(uint iClientID)
 {
+	// Convert iClientID to iShip and see if in space
 	uint iShip;
 	pub::Player::GetShip(iClientID, iShip);
 
-	// is player in space?
 	if (iShip != 0)
 	{
-		// loop through the systems in triggerPoints and see if the player is in one
+		// Get ship system and position
+		Vector pos;
+		Matrix rot;
+		uint iSystem;
+		pub::SpaceObj::GetLocation(iShip, pos, rot);
+		pub::SpaceObj::GetSystem(iShip, iSystem);
+
+		// Loop through our triggers
 		for(auto& ti : triggers)
 		{
-			// scan the player against our defined zones
-			Vector pos;
-			Matrix rot;
-			pub::SpaceObj::GetLocation(iShip, pos, rot); // get position of player's ship as 'pos'
-
-			uint iSystem;
-			pub::SpaceObj::GetSystem(iShip, iSystem);
-
+			// Check to see if they are in the trigger system and within radius of trigger position
 			if (iSystem == CreateID(ti.system.c_str()))
-			{ // they are in trigger system so now check their xyz position against the relevant trigger position data:
+			{
 				if (pos.x < ti.pos.x + ti.radius && pos.x > ti.pos.x - ti.radius && pos.y < ti.pos.y + ti.radius && pos.y > ti.pos.y - ti.radius && pos.z < ti.pos.z + ti.radius && pos.z > ti.pos.z - ti.radius)
 				{
+					// Check what the trigger action is and execute it
 					if (ti.action.type == "warp")
 						HkRelocateClient(iClientID, ti.action.pos, rot);
 
 					if (ti.action.type == "beam")
 					{
 						Universe::IBase* base = Universe::get_base(ti.action.base);
-
 						pub::Player::ForceLand(iClientID, ti.action.base);
 
-						// if not in the same system, emulate F1 charload
+						// If not in the same system, emulate F1 charload
 						if (base->iSystemID != iSystem)
 						{
 							Server.BaseEnter(ti.action.base, iClientID);
