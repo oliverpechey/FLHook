@@ -198,7 +198,7 @@ bool updateInterval()
 		else
 			scanInterval = 1;
 
-		if (iClientID > MAX_CLIENT_ID)
+		if (iClientID > clientsActiveNow + 10) // To combat clients have an ID larger than the amount of players online
 			iClientID = 1;
 
 		return true;
@@ -214,7 +214,11 @@ bool updateInterval()
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
-// TODO Hook into the login of a player to reset scanInterval to 0
+// Hook into the connect of a player to reset scanInterval to 0
+void OnConnect()
+{
+	scanInterval = 0;
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -262,5 +266,6 @@ EXPORT PLUGIN_INFO* Get_PluginInfo()
 	p_PI->ePluginReturnCode = &returncode;
 	p_PI->lstHooks.push_back(PLUGIN_HOOKINFO((FARPROC*)&LoadSettings, PLUGIN_LoadSettings, 0));
 	p_PI->lstHooks.push_back(PLUGIN_HOOKINFO((FARPROC*)&HkTick, PLUGIN_HkIServerImpl_Update, 0));
+	p_PI->lstHooks.push_back(PLUGIN_HOOKINFO((FARPROC*)&OnConnect, PLUGIN_HkIServerImpl_OnConnect_AFTER, 0));
 	return p_PI;
 }
