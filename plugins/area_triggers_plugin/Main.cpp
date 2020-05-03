@@ -4,7 +4,7 @@
 //
 // Made for Zoner Universe - the only vanilla server built entirely in Freeport 9.
 // www.zoneruniverse.com. No rights reserved*
-// * Except if you use any of it your first born daughter belongs to Lemming. Be sure to cut air holes in the crate. We don't want another incident like last time.
+// * Except if you use any of it your hamster belongs to Lemming. Be sure to cut air holes in the crate. We don't want another incident like last time.
 
 #include "Main.h"
 
@@ -31,48 +31,46 @@ In which case we'd want a 'dock' action. I suppose we'd want to scan the player 
 */
 
 
-struct Action				// ɐʇɐp uoıʇɔɐ ɹoɟ ɹǝuıɐʇuoɔ
+struct Action				// Container for action data
 {
-	std::string type;		// ɯɹoɟɹǝd oʇ uoıʇɔɐ ɟo ǝdʎʇ ǝɥʇ
-	Vector pos;				// (sdɹɐʍ ɹoɟ) uoıʇɔɐ ǝɥʇ ɟo uoıʇısod p3
-	uint base;				// (oʇ ƃuıɯɐǝq ɹoɟ pǝsn) pı ǝsɐq
-	int health;				// ¿
-	std::wstring text;		// ¿ʎɐןdsıp oʇ ʇxǝʇ
-	uint sound;				// uoıʇɐʌıʇɔɐ uo ʎɐןd oʇ ǝןdɯɐs punos
+	std::string type;		// The type of action to perform
+	Vector pos;				// Warp: 3D Position of the action
+	uint base;				// Beam: Base ID
+	int health;				// Heal: Percentage of health to heal
+	std::wstring text;		// Chat: Text to display
+	uint sound;				// Sound: ID of sound to play on activation
 };
 
-struct TriggerItem			// ɐʇɐp ǝuoz ɹǝƃƃıɹʇ ɹoɟ ɹǝuıɐʇuoɔ
+struct Zone			// Container for the zone data
 {
-	std::string name;		// ¿
-	Vector pos;				// ɹǝƃƃıɹʇ ǝɥʇ ɟo uoıʇısod p3
-	int radius;				// The radius around the trigger which causes activation.
-	std::string system;		// The system our trigger resides in.
-	Action action;			// Action to take on trigger activation
+	std::string name;		// Unique ID of the zone
+	Vector pos;				// 3D position of zone
+	int radius;				// The radius around the zone which causes activation.
+	std::string system;		// The system our zone resides in.
+	Action action;			// Action to take on zone activation
 };
 
-std::vector< TriggerItem > triggers; // List of trigger zone positions
+std::vector< Zone > zones; // List of trigger zone positions
 
 int tickClock = 0;		// Increments every server tick (up to scan interval). 
 int scanInterval = 60;	// How often to scan a player location (changes based on player count).
 int clientsActiveNow;	// Tracks number of players in-game (they may be docked, but not on login screen).
 
-int clientIDIndexToScanNext = 0; // Tracks which player ID we are currently using
-uint iClientID;
+int iClientIndex = 0; // Tracks which player ID we are currently using
 
-std::vector<uint> playerIDs; // Initialise playerIDs to contain IDs of clients
+std::vector<uint> iClientIDs; // Initialise variable to contain IDs of clients
 void updatePlayerIDs()
 {
-	playerIDs.clear(); // Clear the list of IDs so we don't build on top of it
+	iClientIDs.clear(); // Clear the list of IDs so we don't build on top of it
 	struct PlayerData* pPD = 0; // Struct to contain player data
 	while (pPD = Players.traverse_active(pPD)) // Fetches the next player, returns false if theres no more to break the loop
 	{
 		if (!HkIsInCharSelectMenu(HkGetClientIdFromPD(pPD))) // Ignore players on login menu
-			playerIDs.push_back(HkGetClientIdFromPD(pPD)); 
+			iClientIDs.push_back(HkGetClientIdFromPD(pPD)); 
 			// /\ Two things happening here, 
 			// 1st HkGetClientIdFromPD converts the pPD variable into a client ID, 
 			// 2nd push the clientID onto the list.
 	}
-// so now playerIDs is a list containing elements with player IDs of online players
 }
 
 void LoadSettings()
@@ -95,14 +93,14 @@ void LoadSettings()
 				{
 					if (ini.is_value("zone"))
 					{ 
-						TriggerItem dataItem;
+						Zone dataItem;
 						dataItem.name = ini.get_value_string(0);
 						dataItem.pos.x = ini.get_value_int(1);
 						dataItem.pos.y = ini.get_value_int(2);
 						dataItem.pos.z = ini.get_value_int(3);
 						dataItem.radius = ini.get_value_int(4);
 						dataItem.system = ini.get_value_string(5);
-						triggers.push_back(dataItem);
+						zones.push_back(dataItem);
 					}					
 				}
 			}
@@ -110,7 +108,7 @@ void LoadSettings()
 			{
 				while (ini.read_value())
 				{
-					for (auto& ti : triggers)
+					for (auto& ti : zones)
 					{
 						if (ti.name == ini.get_value_string(0))
 						{
@@ -172,7 +170,7 @@ void scanTriggerZones(uint iClientID)	// Scan player ID's position and if inside
 			pub::SpaceObj::GetSystem(iShip, iSystem);
 
 			// Loop through our triggers
-			for (auto& ti : triggers)
+			for (auto& ti : zones)
 			{
 				// Check to see if they are in the trigger system and within radius of trigger position
 				if (iSystem == CreateID(ti.system.c_str()))
@@ -213,8 +211,12 @@ void scanTriggerZones(uint iClientID)	// Scan player ID's position and if inside
 
 						}
 
-						if (ti.action.type == "heal")
-							pub::SpaceObj::SetRelativeHealth(iShip, ti.action.health);
+						if (ti.action.type == "heal") 
+						{
+							float currentHealth;
+							pub::SpaceObj::GetRelativeHealth(iShip, currentHealth);
+							pub::SpaceObj::SetRelativeHealth(iShip, currentHealth + (ti.action.health / 100));
+						}
 
 						if (ti.action.type == "kill")
 							pub::SpaceObj::Destroy(iShip, DestroyType::FUSE);
@@ -251,28 +253,27 @@ void HkTick()	// Check to see if the scanInterval has elapsed every tick, and if
 {
 	if (tickClock >= scanInterval)
 	{
-		updateInterval(); // update our scanInterval based on the number of players once per scan, ready for next scan
-		updatePlayerIDs(); // Update the list of players ready for a new scan.
+		updateInterval(); // update our scanInterval based on the number of players once per scan, ready for next scan		
 
-		if (clientIDIndexToScanNext < playerIDs.size()) {
-			clientIDIndexToScanNext++;
+		if (iClientIndex < iClientIDs.size()) {
+			iClientIndex++;
 		} else {
-			clientIDIndexToScanNext = 1;
+			iClientIndex = 0;
 		}
 
-		scanTriggerZones(playerIDs[clientIDIndexToScanNext]);
+		scanTriggerZones(iClientIDs[iClientIndex]);
 		tickClock = 0;	// reset our clock ready for the next countdown
 	}
 	else
 		tickClock++;
 }
 
-/* Why hook when we ain't fishin tho innit.
-Scan interval will update on the next scan anyway, which is probably fast enough
-void OnConnect()
+// This hook occurs every time the player count changes
+void UpdatePlayerHook()
 {
-scanInterval = 0;
-} */
+	updatePlayerIDs(); // Update the list of players ready for new scan. 
+	scanInterval = 0; // Also make sure scan happens next tick.
+} 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // FLHOOK STUFF
@@ -303,6 +304,7 @@ EXPORT PLUGIN_INFO* Get_PluginInfo()
 	p_PI->ePluginReturnCode = &returncode;
 	p_PI->lstHooks.push_back(PLUGIN_HOOKINFO((FARPROC*)&LoadSettings, PLUGIN_LoadSettings, 0));
 	p_PI->lstHooks.push_back(PLUGIN_HOOKINFO((FARPROC*)&HkTick, PLUGIN_HkIServerImpl_Update, 0));
-	//p_PI->lstHooks.push_back(PLUGIN_HOOKINFO((FARPROC*)&OnConnect, PLUGIN_HkIServerImpl_OnConnect_AFTER, 0));
+	p_PI->lstHooks.push_back(PLUGIN_HOOKINFO((FARPROC*)&UpdatePlayerHook, PLUGIN_HkIServerImpl_OnConnect_AFTER, 0));
+	p_PI->lstHooks.push_back(PLUGIN_HOOKINFO((FARPROC*)&UpdatePlayerHook, PLUGIN_HkIServerImpl_DisConnect_AFTER, 0));
 	return p_PI;
 }
