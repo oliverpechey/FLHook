@@ -68,7 +68,7 @@ void updatePlayerIDs()
 	{
 		if (!HkIsInCharSelectMenu(HkGetClientIdFromPD(pPD))) // Ignore players on login menu
 			playerIDs.push_back(HkGetClientIdFromPD(pPD)); 
-			// Two things happening here, 
+			// /\ Two things happening here, 
 			// 1st HkGetClientIdFromPD converts the pPD variable into a client ID, 
 			// 2nd push the clientID onto the list.
 	}
@@ -268,7 +268,7 @@ void HkTick()	// Check to see if the scanInterval has elapsed every tick, and if
 }
 
 /* Why hook when we ain't fishin tho innit.
-Scan interval will update on the next scan anyway, which is probably faster than they can leave a zone even if they log into space inside it
+Scan interval will update on the next scan anyway, which is probably fast enough
 void OnConnect()
 {
 scanInterval = 0;
