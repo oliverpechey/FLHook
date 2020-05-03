@@ -8,7 +8,28 @@
 
 #include "Main.h"
 
-// Globals, Structs and Variables
+/* List of actions for reference:
+Warp	- Move inside a system
+Beam	- To a place in another system
+Heal	- Heal the ship. For example 
+Kill	- An area that kills or damages ships. Probably want gradual damage applied each tick?..
+Chat	- Display a chat message to the player entering the zone. Eg: "This area is marked as restricted to Liberty Security Force members"
+Sound	- Play a sound to local players? Or just the one player?..
+----
+Ideas for v2:
+Spawn	- Spawn an NPC or group of NPCs)
+SpawnAndFollow - Spawn an NPC or group of NPCs that follow the player (probably want a rep check condition associated with it).
+- These would be useful for say, spawning Nomads to hunt a player if they enter their space, 
+	or police or BHs being sent if you have a pirate rep and enter a zone.
+
+
+Notes:
+If we add data from the planet locations it could be used to automate docking: Eg. fly into a planet's atmosphere to auto-dock with it.
+In which case we'd want a 'dock' action. I suppose we'd want to scan the player position rapidly if we did this.
+
+
+*/
+
 
 struct Action				// ɐʇɐp uoıʇɔɐ ɹoɟ ɹǝuıɐʇuoɔ
 {
@@ -182,7 +203,8 @@ void scanTriggerZones(uint iClientID)	// Scan player ID's position and if inside
 								// Actually move the player to the new location:
 								// TO DO TO DO TO DO TO DO TO DO TO DO TO DO TO DO TO DO TO DO
 
-
+								// Presumeably just this:?
+								// HkRelocateClient(iClientID, ti.action.pos, rot);
 
 
 								// TO DO TO DO TO DO TO DO TO DO TO DO TO DO TO DO TO DO TO DO
@@ -213,7 +235,7 @@ void scanTriggerZones(uint iClientID)	// Scan player ID's position and if inside
 void updateInterval()	// Update scanInterval based on how many players are in-game
 {
 	clientsActiveNow = GetNumClients();
-	if (clientsActiveNow)
+	if (clientsActiveNow)	// Stop division by 0. Probably a more elegant solution to this..
 	{
 		if (clientsActiveNow < 30)
 			scanInterval = 60 / clientsActiveNow;	// Scan at same rate regardless of number of players (more players = faster scanning)
@@ -234,8 +256,7 @@ void HkTick()	// Check to see if the scanInterval has elapsed every tick, and if
 
 		if (clientIDIndexToScanNext < playerIDs.size()) {
 			clientIDIndexToScanNext++;
-		}
-		else {
+		} else {
 			clientIDIndexToScanNext = 1;
 		}
 
