@@ -67,7 +67,6 @@ void updatePlayerIDs()
 	{
 		if (!HkIsInCharSelectMenu(HkGetClientIdFromPD(pPD))) // Ignore players on login menu
 			iClientIDs.push_back(HkGetClientIdFromPD(pPD)); 
-			// /\ Two things happening here, 
 			// 1st HkGetClientIdFromPD converts the pPD variable into a client ID, 
 			// 2nd push the clientID onto the list.
 	}
