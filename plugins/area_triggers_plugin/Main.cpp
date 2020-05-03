@@ -59,7 +59,7 @@ int clientsActiveNow;	// Tracks number of players in-game (they may be docked, b
 int iClientIndex = 0; // Tracks which player ID we are currently using
 
 std::vector<uint> iClientIDs; // Initialise variable to contain IDs of clients
-void updatePlayerIDs()
+void updateClientIDs()
 {
 	iClientIDs.clear(); // Clear the list of IDs so we don't build on top of it
 	struct PlayerData* pPD = 0; // Struct to contain player data
@@ -153,7 +153,7 @@ void LoadSettings()
 
 void scanTriggerZones(uint iClientID)	// Scan player ID's position and if inside a zone trigger the zone's action on them
 {
-	if (HkIsValidClientID(iClientID))	// Check ID valid in case they just logged off between UpdatePlayerIDs() calls
+	if (HkIsValidClientID(iClientID))	// Check ID valid
 	{
 		// Convert iClientID to iShip and see if in space
 		uint iShip;
@@ -252,16 +252,16 @@ void HkTick()	// Check to see if the scanInterval has elapsed every tick, and if
 {
 	if (tickClock >= scanInterval)
 	{
-		updateInterval(); // update our scanInterval based on the number of players once per scan, ready for next scan		
+		updateInterval(); // update our scanInterval based on the number of players once per scan, ready for next scan	
 
-		if (iClientIndex < iClientIDs.size()) {
-			iClientIndex++;
-		} else {
-			iClientIndex = 0;
-		}
+		if (iClientIDs.size())
+			scanTriggerZones(iClientIDs[iClientIndex]); // Perform the scan on the client
 
-		scanTriggerZones(iClientIDs[iClientIndex]);
 		tickClock = 0;	// reset our clock ready for the next countdown
+		iClientIndex++;
+
+		if (iClientIndex >= iClientIDs.size())
+			iClientIndex = 0;
 	}
 	else
 		tickClock++;
@@ -270,7 +270,7 @@ void HkTick()	// Check to see if the scanInterval has elapsed every tick, and if
 // This hook occurs every time the player count changes
 void UpdatePlayerHook()
 {
-	updatePlayerIDs(); // Update the list of players ready for new scan. 
+	updateClientIDs(); // Update the list of players ready for new scan. 
 	scanInterval = 0; // Also make sure scan happens next tick.
 } 
 
@@ -303,7 +303,7 @@ EXPORT PLUGIN_INFO* Get_PluginInfo()
 	p_PI->ePluginReturnCode = &returncode;
 	p_PI->lstHooks.push_back(PLUGIN_HOOKINFO((FARPROC*)&LoadSettings, PLUGIN_LoadSettings, 0));
 	p_PI->lstHooks.push_back(PLUGIN_HOOKINFO((FARPROC*)&HkTick, PLUGIN_HkIServerImpl_Update, 0));
-	p_PI->lstHooks.push_back(PLUGIN_HOOKINFO((FARPROC*)&UpdatePlayerHook, PLUGIN_HkIServerImpl_OnConnect_AFTER, 0));
+	p_PI->lstHooks.push_back(PLUGIN_HOOKINFO((FARPROC*)&UpdatePlayerHook, PLUGIN_HkIServerImpl_PlayerLaunch_AFTER, 0));
 	p_PI->lstHooks.push_back(PLUGIN_HOOKINFO((FARPROC*)&UpdatePlayerHook, PLUGIN_HkIServerImpl_DisConnect_AFTER, 0));
 	return p_PI;
 }
