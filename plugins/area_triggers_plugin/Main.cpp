@@ -1,9 +1,10 @@
 ﻿// Area Triggers v0.1 by [ZSS]~Lemming and [ZSS]~Raikkonen of the Zoner Shadow Syndicate.
 // A plugin to detect when players are in certain locations and perform preset actions
-// upon them defined in the plugin config files.
+//  upon them defined in the plugin config files.
 //
-// Made for Zoner Universe - the best vanilla server
-// www.zoneruniverse.com. No rights reserved.
+// Made for Zoner Universe - the only vanilla server built entirely in Freeport 9.
+// www.zoneruniverse.com. No rights reserved*
+// * Except if you use any of it your first born daughter belongs to Lemming. Be sure to cut air holes in the crate. We don't want another incident like last time.
 
 #include "Main.h"
 
@@ -32,30 +33,25 @@ std::vector< TriggerItem > triggers; // List of trigger zone positions
 
 int tickClock = 0;		// Increments every server tick (up to scan interval). 
 int scanInterval = 60;	// How often to scan a player location (changes based on player count).
+int clientsActiveNow;	// Tracks number of players in-game (they may be docked, but not on login screen).
 
-// We only want to check the position of one player at once to avoid causing instability due to a spike of cpu use.
-// This tracks which client to scan next tick
-uint iClientID = 1;
+int clientIDIndexToScanNext = 0; // Tracks which player ID we are currently using
+uint iClientID;
 
-std::list<HKPLAYERINFO> HkGetPlayers()
+std::vector<uint> playerIDs; // Initialise playerIDs to contain IDs of clients
+void updatePlayerIDs()
 {
-	std::list<HKPLAYERINFO> lstRet;
-	std::wstring wscRet;
-
-	struct PlayerData* pPD = 0;
-	while (pPD = Players.traverse_active(pPD))
+	playerIDs.clear(); // Clear the list of IDs so we don't build on top of it
+	struct PlayerData* pPD = 0; // Struct to contain player data
+	while (pPD = Players.traverse_active(pPD)) // Fetches the next player, returns false if theres no more to break the loop
 	{
-		uint iClientID = HkGetClientIdFromPD(pPD);
-
-		if (HkIsInCharSelectMenu(iClientID)) // So doesn't return players on login screen?
-			continue;
-
-		HKPLAYERINFO pi;
-		HkGetPlayerInfo(ARG_CLIENTID(iClientID), pi, false);
-		lstRet.push_back(pi);
+		if (!HkIsInCharSelectMenu(HkGetClientIdFromPD(pPD))) // Ignore players on login menu
+			playerIDs.push_back(HkGetClientIdFromPD(pPD)); 
+			// Two things happening here, 
+			// 1st HkGetClientIdFromPD converts the pPD variable into a client ID, 
+			// 2nd push the clientID onto the list.
 	}
-
-	return lstRet;
+// so now playerIDs is a list containing elements with player IDs of online players
 }
 
 void LoadSettings()
@@ -137,16 +133,15 @@ void LoadSettings()
 	ini.close();
 }
 
-
-void scanTriggerZones(uint iClientID)	// Scan player's position and if inside a zone trigger the zone's action on them
+void scanTriggerZones(uint iClientID)	// Scan player ID's position and if inside a zone trigger the zone's action on them
 {
-	if (HkIsValidClientID(iClientID))
+	if (HkIsValidClientID(iClientID))	// Check ID valid in case they just logged off between UpdatePlayerIDs() calls
 	{
 		// Convert iClientID to iShip and see if in space
 		uint iShip;
 		pub::Player::GetShip(iClientID, iShip);
 
-		if (iShip != 0)
+		if (iShip != 0) // If this iShip is actually in space and not docked (we can't get the position of a ship that isn't in space)
 		{
 			// Get ship system and position
 			Vector pos;
@@ -183,6 +178,15 @@ void scanTriggerZones(uint iClientID)	// Scan player's position and if inside a 
 								CHARACTER_ID cID;
 								strcpy(cID.szCharFilename, wstos(wscCharFileName.substr(0, 14)).c_str());
 								Server.CharacterSelect(cID, iClientID);
+
+								// Actually move the player to the new location:
+								// TO DO TO DO TO DO TO DO TO DO TO DO TO DO TO DO TO DO TO DO
+
+
+
+
+								// TO DO TO DO TO DO TO DO TO DO TO DO TO DO TO DO TO DO TO DO
+
 							}
 
 						}
@@ -206,54 +210,48 @@ void scanTriggerZones(uint iClientID)	// Scan player's position and if inside a 
 }
 
 
-bool updateInterval()	// Update scanInterval based on how many players are online. Return true if players are online
+void updateInterval()	// Update scanInterval based on how many players are in-game
 {
-	int clientsActiveNow = GetNumClients();
+	clientsActiveNow = GetNumClients();
 	if (clientsActiveNow)
 	{
 		if (clientsActiveNow < 30)
-			scanInterval = 60 / clientsActiveNow; // TODO Replace 30 and 60 with max player count ( / 2 )
+			scanInterval = 60 / clientsActiveNow;	// Scan at same rate regardless of number of players (more players = faster scanning)
 		else
-			scanInterval = 1;
-
-		if (iClientID > clientsActiveNow + 10) // To combat clients have an ID larger than the amount of players online
-			iClientID = 1;
-
-		return true;
+			scanInterval = 1; // Limit scan interval to maximum rate
 		
-	}
-	// No clients are online so set large ScanInterval to reduce CPU load
-	else {
-		iClientID = 1;
-		scanInterval = 100;
-		return false;
+	} else {
+		scanInterval = 60;
 	}
 }
-
-///////////////////////////////////////////////////////////////////////////////////////
-
-// Hook into the connect of a player to reset scanInterval to 0
-void OnConnect()
-{
-	scanInterval = 0;
-}
-
-///////////////////////////////////////////////////////////////////////////////////////
-
 
 void HkTick()	// Check to see if the scanInterval has elapsed every tick, and if so scan the next player online
 {
-	if (tickClock > scanInterval)
+	if (tickClock >= scanInterval)
 	{
-		if (updateInterval()) {
-			scanTriggerZones(iClientID);
-			iClientID++;
+		updateInterval(); // update our scanInterval based on the number of players once per scan, ready for next scan
+		updatePlayerIDs(); // Update the list of players ready for a new scan.
+
+		if (clientIDIndexToScanNext < playerIDs.size()) {
+			clientIDIndexToScanNext++;
 		}
-		tickClock = 0;
+		else {
+			clientIDIndexToScanNext = 1;
+		}
+
+		scanTriggerZones(playerIDs[clientIDIndexToScanNext]);
+		tickClock = 0;	// reset our clock ready for the next countdown
 	}
 	else
 		tickClock++;
 }
+
+/* Why hook when we ain't fishin tho innit.
+Scan interval will update on the next scan anyway, which is probably faster than they can leave a zone even if they log into space inside it
+void OnConnect()
+{
+scanInterval = 0;
+} */
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // FLHOOK STUFF
@@ -284,6 +282,6 @@ EXPORT PLUGIN_INFO* Get_PluginInfo()
 	p_PI->ePluginReturnCode = &returncode;
 	p_PI->lstHooks.push_back(PLUGIN_HOOKINFO((FARPROC*)&LoadSettings, PLUGIN_LoadSettings, 0));
 	p_PI->lstHooks.push_back(PLUGIN_HOOKINFO((FARPROC*)&HkTick, PLUGIN_HkIServerImpl_Update, 0));
-	p_PI->lstHooks.push_back(PLUGIN_HOOKINFO((FARPROC*)&OnConnect, PLUGIN_HkIServerImpl_OnConnect_AFTER, 0));
+	//p_PI->lstHooks.push_back(PLUGIN_HOOKINFO((FARPROC*)&OnConnect, PLUGIN_HkIServerImpl_OnConnect_AFTER, 0));
 	return p_PI;
 }
