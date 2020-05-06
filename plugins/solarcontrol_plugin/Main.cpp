@@ -57,6 +57,9 @@ float rand_FloatRange(float a, float b)
 
 void LoadSolarInfo()
 {
+	startupSOLARs.clear();
+	spawnedSOLARs.clear();
+
 	// The path to the configuration file.
 	char szCurDir[MAX_PATH];
 	GetCurrentDirectory(sizeof(szCurDir), szCurDir);
