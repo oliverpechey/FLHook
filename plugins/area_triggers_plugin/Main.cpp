@@ -7,6 +7,7 @@
 // * Except if you use any of it your hamster belongs to Lemming. Be sure to cut air holes in the crate. We don't want another incident like last time.
 
 #include "Main.h"
+#include <chrono> // used for timing cooldowns
 
 /* List of actions for reference:
 Warp	- Move inside a system
@@ -51,6 +52,21 @@ struct Zone			// Container for the zone data
 };
 
 std::vector< Zone > zones; // List of trigger zone positions
+
+struct cooldownTimer	// tracks when events were last fired to stop rapid repetition.
+{
+	int triggeredZone;
+	int triggeredPlayer;
+	int triggeredTime;
+};
+
+std::vector< cooldownTimer > cooldownTimers;
+// auto start = chrono::steady_clock::now();
+// auto end = chrono::steady_clock::now();
+// chrono::duration_cast<chrono::seconds>(end - start).count()
+
+
+
 
 int tickClock = 0;		// Increments every server tick (up to scan interval). 
 int scanInterval = 60;	// How often to scan a player location (changes based on player count).
