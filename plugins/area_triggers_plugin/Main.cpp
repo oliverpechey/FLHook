@@ -53,17 +53,13 @@ struct Zone			// Container for the zone data
 
 std::vector< Zone > zones; // List of trigger zone positions
 
-struct cooldownTimer	// tracks when events were last fired to stop rapid repetition.
-{
-	int triggeredZone;
-	int triggeredPlayer;
-	int triggeredTime;
-};
 
-std::vector< cooldownTimer > cooldownTimers;
+
+std::vector< steady_clock::time_point > cooldownTimers; // store the trigger times 
+
 // auto start = chrono::steady_clock::now();
 // auto end = chrono::steady_clock::now();
-// chrono::duration_cast<chrono::seconds>(end - start).count()
+// chrono::duration_cast<chrono::seconds>(end - start).count() // seconds elapsed since
 
 
 
@@ -192,55 +188,62 @@ void scanTriggerZones(uint iClientID)	// Scan player ID's position and if inside
 				{
 					if (pos.x < ti.pos.x + ti.radius && pos.x > ti.pos.x - ti.radius && pos.y < ti.pos.y + ti.radius && pos.y > ti.pos.y - ti.radius && pos.z < ti.pos.z + ti.radius && pos.z > ti.pos.z - ti.radius)
 					{
-						// Check what the trigger action is and execute it
-						if (ti.action.type == "warp")
-							HkRelocateClient(iClientID, ti.action.pos, rot);
-
-						if (ti.action.type == "beam")
+						// Check cooldown timer for this trigger
+						if (xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx )
 						{
-							Universe::IBase* base = Universe::get_base(ti.action.base);
-							pub::Player::ForceLand(iClientID, ti.action.base);
 
-							// If not in the same system, emulate F1 charload
-							if (base->iSystemID != iSystem)
+
+
+							// Check what the trigger action is and execute it
+							if (ti.action.type == "warp")
+								HkRelocateClient(iClientID, ti.action.pos, rot);
+
+							if (ti.action.type == "beam")
 							{
-								Server.BaseEnter(ti.action.base, iClientID);
-								Server.BaseExit(ti.action.base, iClientID);
-								std::wstring wscCharFileName;
-								HkGetCharFileName(ARG_CLIENTID(iClientID), wscCharFileName);
-								wscCharFileName += L".fl";
-								CHARACTER_ID cID;
-								strcpy(cID.szCharFilename, wstos(wscCharFileName.substr(0, 14)).c_str());
-								Server.CharacterSelect(cID, iClientID);
+								Universe::IBase* base = Universe::get_base(ti.action.base);
+								pub::Player::ForceLand(iClientID, ti.action.base);
 
-								// Actually move the player to the new location:
-								// TO DO TO DO TO DO TO DO TO DO TO DO TO DO TO DO TO DO TO DO
+								// If not in the same system, emulate F1 charload
+								if (base->iSystemID != iSystem)
+								{
+									Server.BaseEnter(ti.action.base, iClientID);
+									Server.BaseExit(ti.action.base, iClientID);
+									std::wstring wscCharFileName;
+									HkGetCharFileName(ARG_CLIENTID(iClientID), wscCharFileName);
+									wscCharFileName += L".fl";
+									CHARACTER_ID cID;
+									strcpy(cID.szCharFilename, wstos(wscCharFileName.substr(0, 14)).c_str());
+									Server.CharacterSelect(cID, iClientID);
 
-								// Presumeably just this:?
-								// HkRelocateClient(iClientID, ti.action.pos, rot);
+									// Actually move the player to the new location:
+									// TO DO TO DO TO DO TO DO TO DO TO DO TO DO TO DO TO DO TO DO
+
+									// Presumeably just this:?
+									// HkRelocateClient(iClientID, ti.action.pos, rot);
 
 
-								// TO DO TO DO TO DO TO DO TO DO TO DO TO DO TO DO TO DO TO DO
+									// TO DO TO DO TO DO TO DO TO DO TO DO TO DO TO DO TO DO TO DO
+
+								}
 
 							}
 
+							if (ti.action.type == "heal")
+							{
+								float currentHealth;
+								pub::SpaceObj::GetRelativeHealth(iShip, currentHealth);
+								pub::SpaceObj::SetRelativeHealth(iShip, currentHealth + (ti.action.health / 100));
+							}
+
+							if (ti.action.type == "kill")
+								pub::SpaceObj::Destroy(iShip, DestroyType::FUSE);
+
+							if (ti.action.type == "chat")
+								PrintUserCmdText(iClientID, ti.action.text);
+
+							if (ti.action.type == "sound")
+								pub::Audio::PlaySoundEffect(iClientID, ti.action.sound);
 						}
-
-						if (ti.action.type == "heal") 
-						{
-							float currentHealth;
-							pub::SpaceObj::GetRelativeHealth(iShip, currentHealth);
-							pub::SpaceObj::SetRelativeHealth(iShip, currentHealth + (ti.action.health / 100));
-						}
-
-						if (ti.action.type == "kill")
-							pub::SpaceObj::Destroy(iShip, DestroyType::FUSE);
-
-						if (ti.action.type == "chat")
-							PrintUserCmdText(iClientID, ti.action.text);
-
-						if (ti.action.type == "sound")
-							pub::Audio::PlaySoundEffect(iClientID, ti.action.sound);
 					}
 				}
 			}
