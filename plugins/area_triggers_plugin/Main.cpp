@@ -53,9 +53,7 @@ struct Zone			// Container for the zone data
 
 std::vector< Zone > zones; // List of trigger zone positions
 
-
-
-std::vector< steady_clock::time_point > cooldownTimers; // store the trigger times 
+std::vector< std::chrono::steady_clock::time_point > cooldownTimers(999); // vector with 999 slots
 
 // auto start = chrono::steady_clock::now();
 // auto end = chrono::steady_clock::now();
@@ -189,7 +187,9 @@ void scanTriggerZones(uint iClientID)	// Scan player ID's position and if inside
 					if (pos.x < ti.pos.x + ti.radius && pos.x > ti.pos.x - ti.radius && pos.y < ti.pos.y + ti.radius && pos.y > ti.pos.y - ti.radius && pos.z < ti.pos.z + ti.radius && pos.z > ti.pos.z - ti.radius)
 					{
 						// Check cooldown timer for this trigger
-						if (xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx )
+						std::chrono::duration<double> cooldownElapsed = std::chrono::system_clock::now() - cooldownTimers[iClientID];
+
+						if (cooldownTimers[iClientID] > 0 || cooldownElapsed > 9)
 						{
 
 
