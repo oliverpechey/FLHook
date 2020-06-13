@@ -189,7 +189,7 @@ void scanTriggerZones(uint iClientID)	// Scan player ID's position and if inside
 						// Check cooldown timer for this trigger
 						std::chrono::duration<double> cooldownElapsed = std::chrono::system_clock::now() - cooldownTimers[iClientID];
 
-						if (cooldownTimers[iClientID] > 0 || cooldownElapsed > 9)
+						if (cooldownElapsed > 9)
 						{
 
 
