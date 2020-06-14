@@ -187,7 +187,7 @@ void scanTriggerZones(uint iClientID)	// Scan player ID's position and if inside
 					if (pos.x < ti.pos.x + ti.radius && pos.x > ti.pos.x - ti.radius && pos.y < ti.pos.y + ti.radius && pos.y > ti.pos.y - ti.radius && pos.z < ti.pos.z + ti.radius && pos.z > ti.pos.z - ti.radius)
 					{
 						// Calculate duration between time points:
-						std::chrono::duration<double> durationElapsed = std::chrono::system_clock::now() - cooldownTimers[iClientID];
+						std::chrono::duration<double> durationElapsed = std::chrono::steady_clock::now() - cooldownTimers[iClientID];
 
 						if (cooldownTimers[iClientID] == NULL || durationElapsed.count() > 9)
 						{
