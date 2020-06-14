@@ -53,11 +53,11 @@ struct Zone			// Container for the zone data
 
 std::vector< Zone > zones; // List of trigger zone positions
 
-std::vector< std::chrono::steady_clock::time_point > cooldownTimers(999); // vector with 999 slots
+std::vector< std::chrono::steady_clock::time_point > cooldownTimers(999); // vector of time points type
 
-auto start = std::chrono::steady_clock::now();
-auto end = std::chrono::steady_clock::now();
-auto cooldownDuration = std::chrono::duration_cast<std::chrono::seconds>(end - start).count(); // seconds elapsed since
+// auto start = std::chrono::steady_clock::now();
+// auto end = std::chrono::steady_clock::now();
+// auto cooldownDuration = std::chrono::duration_cast<std::chrono::seconds>(end - start).count(); // seconds elapsed since
 
 
 
@@ -186,12 +186,13 @@ void scanTriggerZones(uint iClientID)	// Scan player ID's position and if inside
 				{
 					if (pos.x < ti.pos.x + ti.radius && pos.x > ti.pos.x - ti.radius && pos.y < ti.pos.y + ti.radius && pos.y > ti.pos.y - ti.radius && pos.z < ti.pos.z + ti.radius && pos.z > ti.pos.z - ti.radius)
 					{
-						// Check cooldown timer for this trigger
-						std::chrono::duration<double> cooldownElapsed = std::chrono::system_clock::now() - cooldownTimers[iClientID];
+						// Calculate duration between time points:
+						std::chrono::duration<double> durationElapsed = std::chrono::system_clock::now() - cooldownTimers[iClientID];
 
-						if (cooldownElapsed > 9)
+						if (cooldownTimers[iClientID] == NULL || durationElapsed.count() > 9)
 						{
-
+							// store the time we triggered this event:
+							cooldownTimers[iClientID] = std::chrono::steady_clock::now();
 
 
 							// Check what the trigger action is and execute it
