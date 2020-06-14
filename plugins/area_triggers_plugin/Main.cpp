@@ -55,9 +55,9 @@ std::vector< Zone > zones; // List of trigger zone positions
 
 std::vector< std::chrono::steady_clock::time_point > cooldownTimers(999); // vector with 999 slots
 
-// auto start = chrono::steady_clock::now();
-// auto end = chrono::steady_clock::now();
-// chrono::duration_cast<chrono::seconds>(end - start).count() // seconds elapsed since
+auto start = std::chrono::steady_clock::now();
+auto end = std::chrono::steady_clock::now();
+auto cooldownDuration = std::chrono::duration_cast<std::chrono::seconds>(end - start).count(); // seconds elapsed since
 
 
 
