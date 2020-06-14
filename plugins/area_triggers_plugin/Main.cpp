@@ -53,14 +53,7 @@ struct Zone			// Container for the zone data
 
 std::vector< Zone > zones; // List of trigger zone positions
 
-std::vector< std::chrono::steady_clock::time_point > cooldownTimers(999); // vector of time points type
-
-// auto start = std::chrono::steady_clock::now();
-// auto end = std::chrono::steady_clock::now();
-// auto cooldownDuration = std::chrono::duration_cast<std::chrono::seconds>(end - start).count(); // seconds elapsed since
-
-
-
+std::vector< std::chrono::steady_clock::time_point > cooldownTimers(1000); // vector of time points type
 
 int tickClock = 0;		// Increments every server tick (up to scan interval). 
 int scanInterval = 60;	// How often to scan a player location (changes based on player count).
@@ -159,6 +152,12 @@ void LoadSettings()
 		}
 	}
 	ini.close();
+
+	// Initialise cooldown vector values with starting time
+	for (int a = 0; a < 1000; a = a + 1) {
+	cooldownTimers[a] = std::chrono::steady_clock::now();
+	}
+
 }
 
 void scanTriggerZones(uint iClientID)	// Scan player ID's position and if inside a zone trigger the zone's action on them
@@ -189,9 +188,9 @@ void scanTriggerZones(uint iClientID)	// Scan player ID's position and if inside
 						// Calculate duration between time points:
 						std::chrono::duration<double> durationElapsed = std::chrono::steady_clock::now() - cooldownTimers[iClientID];
 
-						if (cooldownTimers[iClientID] == NULL || durationElapsed.count() > 9)
+						if (durationElapsed.count() > 9)
 						{
-							// store the time we triggered this event:
+							// store the time we triggered this event for future checks:
 							cooldownTimers[iClientID] = std::chrono::steady_clock::now();
 
 
