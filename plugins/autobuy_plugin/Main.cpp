@@ -21,8 +21,7 @@
 
 std::wstring wscError[] =
 {
-	L"Error: Invalid parameters",
-	L"Usage: /autobuy <param> [<on/off>]",
+	L"/autobuy <param> [<on/off>]",
 	L"<Param>:",
 	L"   info - display current autobuy-settings",
 	L"   missiles - enable/disable autobuy for missiles",
