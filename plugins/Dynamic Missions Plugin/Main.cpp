@@ -1,8 +1,8 @@
-// includes 
-#include "../flhookplugin_sdk/headers/FLHook.h"
-#include "../flhookplugin_sdk/headers/plugin.h"
+// Dynamic Missions by w0dk4
 
-
+// Includes 
+#include "FLHook.h"
+#include "plugin.h"
 #include <math.h>
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -39,7 +39,7 @@ struct ACTION_DEBUGMSG_DATA
 
 void __stdcall HkActTrigger(TRIGGER_ARG* trigger)
 {
-	wstring msg = L"Mission trigger activated with hash id: " + stows(itos(trigger->iTriggerHash)) + L"\n";
+	std::wstring msg = L"Mission trigger activated with hash id: " + stows(itos(trigger->iTriggerHash)) + L"\n";
 	ConPrint(msg);
 	HkMsgU(msg);
 }
@@ -67,7 +67,7 @@ __declspec(naked) void _HkActTrigger()
 
 int __stdcall HkActDebugMsg(ACTION_DEBUGMSG_DATA* action_dbgMsg)
 {
-	wstring msg = L"Mission trigger (" + stows(itos(action_dbgMsg->iTriggerHash)) + L") sent debug msg: " + stows(string(action_dbgMsg->szMessage)) + L"\n";
+	std::wstring msg = L"Mission trigger (" + stows(itos(action_dbgMsg->iTriggerHash)) + L") sent debug msg: " + stows(std::string(action_dbgMsg->szMessage)) + L"\n";
 	ConPrint(msg);
 	HkMsgU(msg);
 
@@ -272,7 +272,7 @@ void CmdTest2(CCmds* classptr, uint iTest)
 
 #define IS_CMD(a) !wscCmd.compare(L##a)
 
-EXPORT bool ExecuteCommandString_Callback(CCmds* classptr, const wstring& wscCmd)
+EXPORT bool ExecuteCommandString_Callback(CCmds* classptr, const std::wstring& wscCmd)
 {
 	returncode = NOFUNCTIONCALL;  // flhook needs to care about our return code
 
@@ -310,8 +310,8 @@ EXPORT void CmdHelp_Callback(CCmds* classptr)
 EXPORT PLUGIN_INFO* Get_PluginInfo()
 {
 	PLUGIN_INFO* p_PI = new PLUGIN_INFO();
-	p_PI->sName = "Dynamic Missions Plugin by w0dk4";
-	p_PI->sShortName = "dynmissions";
+	p_PI->sName = "Dynamic Missions";
+	p_PI->sShortName = "missions";
 	p_PI->bMayPause = false;
 	p_PI->bMayUnload = false;
 	p_PI->ePluginReturnCode = &returncode;
