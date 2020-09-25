@@ -55,15 +55,13 @@ HK_ERROR HkMissionEnd()
 	return HKE_OK;
 }
 
-void __stdcall Startup_AFTER(unsigned int iShip, unsigned int iClientID)
+void StopStart()
 {
-	returncode = DEFAULT_RETURNCODE;
-
-	// Should we start the mission automatically?
 	if (bAutoStart)
 	{
 		try
 		{
+			HkMissionEnd();
 			HkMissionStart();
 		}
 		catch (...)
@@ -71,6 +69,17 @@ void __stdcall Startup_AFTER(unsigned int iShip, unsigned int iClientID)
 			LOG_EXCEPTION
 		}
 	}
+}
+void __stdcall JumpInComplete_AFTER()
+{
+	returncode = DEFAULT_RETURNCODE;
+	StopStart();
+}
+
+void __stdcall PlayerLaunch_AFTER()
+{
+	returncode = DEFAULT_RETURNCODE;
+	StopStart();
 }
 
 // Load Settings - Installs some hooks and loads in config file (and possibly starts mission)
@@ -167,7 +176,8 @@ EXPORT PLUGIN_INFO* Get_PluginInfo()
 	p_PI->bMayUnload = false;
 	p_PI->ePluginReturnCode = &returncode;
 	p_PI->lstHooks.push_back(PLUGIN_HOOKINFO((FARPROC*)&LoadSettings, PLUGIN_LoadSettings, 0));
-	p_PI->lstHooks.push_back(PLUGIN_HOOKINFO((FARPROC*)&Startup_AFTER, PLUGIN_HkIServerImpl_Startup_AFTER, 0));
+	p_PI->lstHooks.push_back(PLUGIN_HOOKINFO((FARPROC*)&JumpInComplete_AFTER, PLUGIN_HkIServerImpl_JumpInComplete_AFTER, 0));
+	p_PI->lstHooks.push_back(PLUGIN_HOOKINFO((FARPROC*)&PlayerLaunch_AFTER, PLUGIN_HkIServerImpl_PlayerLaunch_AFTER, 0));
 	p_PI->lstHooks.push_back(PLUGIN_HOOKINFO((FARPROC*)&ExecuteCommandString_Callback, PLUGIN_ExecuteCommandString_Callback, 0));
 	p_PI->lstHooks.push_back(PLUGIN_HOOKINFO((FARPROC*)&CmdHelp_Callback, PLUGIN_CmdHelp_Callback, 0));
 	return p_PI;
