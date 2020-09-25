@@ -24,8 +24,9 @@ struct ACTION_DEBUGMSG_DATA
 	char szMessage[255];
 };
 
+bool bAutoStart = false;
+bool bAlreadyRan = false;
 uint iControllerID = 0;
-
 char* pAddressTriggerAct;
 
 // Functions
@@ -160,8 +161,26 @@ HK_ERROR HkMissionEnd()
 	return HKE_OK;
 }
 
-// Load Settings - Installs some hooks and loads in config file (and possibly starts mission)
+void __stdcall PlayerLaunch_AFTER(unsigned int iShip, unsigned int iClientID)
+{
+	returncode = DEFAULT_RETURNCODE;
 
+	// Should we start the mission automatically?
+	if (bAutoStart && !bAlreadyRan)
+	{
+		try
+		{
+			HkMissionStart();
+			bAlreadyRan = true;
+		}
+		catch (...)
+		{
+			LOG_EXCEPTION
+		}
+	}
+}
+
+// Load Settings - Installs some hooks and loads in config file (and possibly starts mission)
 EXPORT void LoadSettings()
 {
 	returncode = DEFAULT_RETURNCODE;
@@ -196,19 +215,7 @@ EXPORT void LoadSettings()
 	char szCurDir[MAX_PATH];
 	GetCurrentDirectory(sizeof(szCurDir), szCurDir);
 	std::string configFile = std::string(szCurDir) + "\\flhook_plugins\\missions.cfg";
-
-	// Should we start the mission automatically?
-	if (IniGetB(configFile, "General", "Auto-Start", false))
-	{
-		try
-		{
-			HkMissionStart();
-		}
-		catch (...)
-		{
-			LOG_EXCEPTION
-		}
-	}
+	bAutoStart = IniGetB(configFile, "General", "Auto-Start", false);
 }
 
 // Admin Commands
@@ -288,6 +295,7 @@ EXPORT PLUGIN_INFO* Get_PluginInfo()
 	p_PI->bMayUnload = false;
 	p_PI->ePluginReturnCode = &returncode;
 	p_PI->lstHooks.push_back(PLUGIN_HOOKINFO((FARPROC*)&LoadSettings, PLUGIN_LoadSettings, 0));
+	p_PI->lstHooks.push_back(PLUGIN_HOOKINFO((FARPROC*)&PlayerLaunch_AFTER, PLUGIN_HkIServerImpl_PlayerLaunch_AFTER, 0));
 	p_PI->lstHooks.push_back(PLUGIN_HOOKINFO((FARPROC*)&ExecuteCommandString_Callback, PLUGIN_ExecuteCommandString_Callback, 0));
 	p_PI->lstHooks.push_back(PLUGIN_HOOKINFO((FARPROC*)&CmdHelp_Callback, PLUGIN_CmdHelp_Callback, 0));
 	return p_PI;
