@@ -6,18 +6,7 @@
 #include "Main.h"
 #include <math.h>
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-EXPORT PLUGIN_RETURNCODE Get_PluginReturnCode()
-{
-	return returncode;
-}
-
-
-BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
-{
-	return true;
-}
+// Structs and global variables
 
 struct TRIGGER_ARG
 {
@@ -35,14 +24,18 @@ struct ACTION_DEBUGMSG_DATA
 	char szMessage[255];
 };
 
+uint iControllerID = 0;
+
+char* pAddressTriggerAct;
+
+// Functions
+
 void __stdcall HkActTrigger(TRIGGER_ARG* trigger)
 {
 	std::wstring msg = L"Mission trigger activated with hash id: " + stows(itos(trigger->iTriggerHash)) + L"\n";
 	ConPrint(msg);
 	HkMsgU(msg);
 }
-
-char* pAddressTriggerAct;
 
 __declspec(naked) void _HkActTrigger()
 {
@@ -142,28 +135,40 @@ int __cdecl HkCreateSolar(uint &iSpaceID, pub::SpaceObj::SolarInfo &solarInfo)
 	return returnVal;
 }
 
-bool HkSinglePlayer()
+HK_ERROR HkMissionStart()
 {
-	return true;
+	
+	if(iControllerID)
+		return HKE_UNKNOWN_ERROR;
+
+	char* pAddress = (char*)hModContent + 0x114388;
+	pub::Controller::CreateParms params = {pAddress, 1};
+	iControllerID = pub::Controller::Create("Content.dll", "Mission_01a", &params, (pub::Controller::PRIORITY)2);
+	pub::Controller::_SendMessage(iControllerID, 0x1000, 0);
+	
+	return HKE_OK;
 }
+
+HK_ERROR HkMissionEnd()
+{
+	if(!iControllerID)
+		return HKE_UNKNOWN_ERROR;
+
+	pub::Controller::Destroy(iControllerID);
+	iControllerID = 0;
+
+	return HKE_OK;
+}
+
+// Load Settings - Installs some hooks and loads in config file (and possibly starts mission)
 
 EXPORT void LoadSettings()
 {
 	returncode = DEFAULT_RETURNCODE;
 
-/*	// patch cheat detection
-	char* pAddress = ((char*)hModServer + 0x6CD44);
-	char szJMP[] = { '\xEB' };
-	WriteProcMem(pAddress, szJMP, 1);
-	
-	pAddress = ((char*)hModCommon + 0x13E678);
-	float fJumpinDistance = 30000;
-	WriteProcMem(pAddress, &fJumpinDistance, 4);*/
-
-
 	// patch singleplayer check in Player pos calculation
 	char* pAddress = ((char*)GetModuleHandle("content.dll") + 0xD3B0D);
-	char szNOP[] = { '\x90', '\x90','\x90','\x90','\x90','\x90'};
+	char szNOP[] = { '\x90', '\x90','\x90','\x90','\x90','\x90' };
 	WriteProcMem(pAddress, szNOP, 6);
 
 	// install hook for trigger events
@@ -187,105 +192,70 @@ EXPORT void LoadSettings()
 	FARPROC fpHkCreateSolar = (FARPROC)HkCreateSolar;
 	WriteProcMem(pAddressCreateSolar, &fpHkCreateSolar, 4);
 
-	/*
-	// hook singleplayer check
-	char* pAddressSP = ((char*)GetModuleHandle("content.dll") + 0x1136A0);
-	FARPROC fpHkSP = (FARPROC)HkSinglePlayer;
-	WriteProcMem(pAddressSP, &fpHkSP, 4);
-	*/
-}
+	// The path to the configuration file.
+	char szCurDir[MAX_PATH];
+	GetCurrentDirectory(sizeof(szCurDir), szCurDir);
+	std::string configFile = std::string(szCurDir) + "\\flhook_plugins\\missions.cfg";
 
-namespace HkIEngine
-{    
-
-	EXPORT void __stdcall CShip_init(CShip* ship)
+	// Should we start the mission automatically?
+	if (IniGetB(configFile, "General", "Auto-Start", false))
 	{
-		returncode = DEFAULT_RETURNCODE;
-	}
-
-
-	EXPORT void __stdcall CShip_destroy(CShip* ship)
-	{
-		returncode = DEFAULT_RETURNCODE;
+		try
+		{
+			HkMissionStart();
+		}
+		catch (...)
+		{
+			LOG_EXCEPTION
+		}
 	}
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Admin Commands
 
-uint iControllerID = 0;
-
-HK_ERROR HkTest(uint iTest)
+void StartMission(CCmds* cmds)
 {
-	
-	if(iControllerID)
-		return HKE_UNKNOWN_ERROR;
+	if (!(cmds->rights & RIGHT_SUPERADMIN)) { cmds->Print(L"ERR No permission\n"); return; }
 
-	char* pAddress = (char*)hModContent + 0x114388;
-	pub::Controller::CreateParms params = {pAddress, 1};
-	iControllerID = pub::Controller::Create("Content.dll", "Mission_01a", &params, (pub::Controller::PRIORITY)2);
-	pub::Controller::_SendMessage(iControllerID, 0x1000, 0);
-	
-	return HKE_OK;
-}
-
-HK_ERROR HkTest2(uint iTest)
-{
-	if(!iControllerID)
-		return HKE_UNKNOWN_ERROR;
-
-	pub::Controller::Destroy(iControllerID);
-	iControllerID = 0;
-
-	return HKE_OK;
-}
-
-void StartMission(CCmds* classptr, uint iTest)
-{
-
-	// right check
-	if(!(classptr->rights & RIGHT_SUPERADMIN)) { classptr->Print(L"ERR No permission\n"); return;}
-
-	if(((classptr->hkLastErr = HkTest(iTest)) == HKE_OK)) // hksuccess 
-		classptr->Print(L"OK\n");
+	if (((cmds->hkLastErr = HkMissionStart()) == HKE_OK))
+		cmds->Print(L"OK\n");
 	else
-		classptr->PrintError();
+		cmds->PrintError();
 }
 
-void EndMission(CCmds* classptr, uint iTest)
+void EndMission(CCmds* cmds)
 {
+	if (!(cmds->rights & RIGHT_SUPERADMIN)) { cmds->Print(L"ERR No permission\n"); return; }
 
-	// right check
-	if(!(classptr->rights & RIGHT_SUPERADMIN)) { classptr->Print(L"ERR No permission\n"); return;}
-
-	if(((classptr->hkLastErr = HkTest2(iTest)) == HKE_OK)) // hksuccess 
-		classptr->Print(L"OK\n");
+	if (((cmds->hkLastErr = HkMissionEnd()) == HKE_OK)) 
+		cmds->Print(L"OK\n");
 	else
-		classptr->PrintError();
+		cmds->PrintError();
 }
 
 EXPORT bool ExecuteCommandString_Callback(CCmds* cmds, const std::wstring& wscCmd)
 {
 	returncode = NOFUNCTIONCALL;  // flhook needs to care about our return code
 
-	if(IS_CMD("startmission")) {
+	if (IS_CMD("startmission")) {
 
 		returncode = SKIPPLUGINS_NOFUNCTIONCALL; // do not let other plugins kick in since we now handle the command
 
-		StartMission(cmds, cmds->ArgInt(1));
+		StartMission(cmds);
 
 		return true;
 	}
 
-	if(IS_CMD("endmission")) {
+	if (IS_CMD("endmission")) {
 
 		returncode = SKIPPLUGINS_NOFUNCTIONCALL; // do not let other plugins kick in since we now handle the command
 
-		EndMission(cmds, cmds->ArgInt(1));
+		EndMission(cmds);
 
 		return true;
 	}
 
-    return false;
+	return false;
 }
 
 EXPORT void CmdHelp_Callback(CCmds* cmds)
@@ -296,7 +266,18 @@ EXPORT void CmdHelp_Callback(CCmds* cmds)
 	cmds->Print(L"endmission\n");
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// FLHook functions
+
+EXPORT PLUGIN_RETURNCODE Get_PluginReturnCode()
+{
+	return returncode;
+}
+
+
+BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
+{
+	return true;
+}
 
 EXPORT PLUGIN_INFO* Get_PluginInfo()
 {
@@ -307,8 +288,6 @@ EXPORT PLUGIN_INFO* Get_PluginInfo()
 	p_PI->bMayUnload = false;
 	p_PI->ePluginReturnCode = &returncode;
 	p_PI->lstHooks.push_back(PLUGIN_HOOKINFO((FARPROC*)&LoadSettings, PLUGIN_LoadSettings, 0));
-	p_PI->lstHooks.push_back(PLUGIN_HOOKINFO((FARPROC*)&HkIEngine::CShip_init, PLUGIN_HkIEngine_CShip_init, 0));
-	p_PI->lstHooks.push_back(PLUGIN_HOOKINFO((FARPROC*)&HkIEngine::CShip_destroy, PLUGIN_HkIEngine_CShip_destroy, 0));
 	p_PI->lstHooks.push_back(PLUGIN_HOOKINFO((FARPROC*)&ExecuteCommandString_Callback, PLUGIN_ExecuteCommandString_Callback, 0));
 	p_PI->lstHooks.push_back(PLUGIN_HOOKINFO((FARPROC*)&CmdHelp_Callback, PLUGIN_CmdHelp_Callback, 0));
 	return p_PI;
