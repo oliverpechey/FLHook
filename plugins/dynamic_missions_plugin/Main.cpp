@@ -25,116 +25,10 @@ struct ACTION_DEBUGMSG_DATA
 };
 
 bool bAutoStart = false;
-bool bAlreadyRan = false;
 uint iControllerID = 0;
 char* pAddressTriggerAct;
 
 // Functions
-
-void __stdcall HkActTrigger(TRIGGER_ARG* trigger)
-{
-	std::wstring msg = L"Mission trigger activated with hash id: " + stows(itos(trigger->iTriggerHash)) + L"\n";
-	ConPrint(msg);
-	HkMsgU(msg);
-}
-
-__declspec(naked) void _HkActTrigger()
-{
-	__asm
-	{
-		push ecx
-		push [esp+8]
-		call HkActTrigger
-		pop ecx
-		// original func instructions
-		push ebx
-		push esi
-		mov esi, [esp + 8 + 4]
-		push edi
-		mov eax, [pAddressTriggerAct]
-		add eax, 7
-		jmp eax
-	}
-}
-
-int __stdcall HkActDebugMsg(ACTION_DEBUGMSG_DATA* action_dbgMsg)
-{
-	std::wstring msg = L"Mission trigger (" + stows(itos(action_dbgMsg->iTriggerHash)) + L") sent debug msg: " + stows(std::string(action_dbgMsg->szMessage)) + L"\n";
-	ConPrint(msg);
-	HkMsgU(msg);
-
-	return 1;
-}
-
-__declspec(naked) void _HkActDebugMsg()
-{
-	__asm
-	{
-		push ecx
-		call HkActDebugMsg
-		mov eax, 1
-		ret
-	}
-}
-
-int __cdecl HkCreateSolar(uint &iSpaceID, pub::SpaceObj::SolarInfo &solarInfo)
-{
-	// hack server.dll so it does not call create solar packet send
-
-    char* serverHackAddress = (char*)hModServer + 0x2A62A;
-    char serverHack[] = {'\xEB'};
-    WriteProcMem(serverHackAddress, &serverHack, 1);
-
-	// create it
-	int returnVal = pub::SpaceObj::CreateSolar(iSpaceID, solarInfo);
-
-	uint dunno;
-	IObjInspectImpl* inspect;
-	if(GetShipInspect(iSpaceID, inspect, dunno))
-	{
-		CSolar* solar = (CSolar*)inspect->cobject();
-
-		// for every player in the same system, send solar creation packet
-
-		struct SOLAR_STRUCT
-		{
-			byte dunno[0x100];
-		};
-
-		SOLAR_STRUCT packetSolar;
-
-		char* address1 = (char*)hModServer + 0x163F0;
-		char* address2 = (char*)hModServer + 0x27950;
-
-		// fill struct
-		__asm
-		{
-			lea ecx, packetSolar
-			mov eax, address1
-			call eax
-			push solar
-			lea ecx, packetSolar
-			push ecx
-			mov eax, address2
-			call eax
-			add esp, 8
-		}
-
-		struct PlayerData *pPD = 0;
-		while(pPD = Players.traverse_active(pPD))
-		{
-			if(pPD->iSystemID == solarInfo.iSystemID)
-				GetClientInterface()->Send_FLPACKET_SERVER_CREATESOLAR(pPD->iOnlineID, (FLPACKET_CREATESOLAR&)packetSolar);
-		}
-
-	}
-
-	 // undo the server.dll hack
-    char serverUnHack[] = {'\x74'};	
-    WriteProcMem(serverHackAddress, &serverUnHack, 1);
-
-	return returnVal;
-}
 
 HK_ERROR HkMissionStart()
 {
@@ -161,17 +55,16 @@ HK_ERROR HkMissionEnd()
 	return HKE_OK;
 }
 
-void __stdcall PlayerLaunch_AFTER(unsigned int iShip, unsigned int iClientID)
+void __stdcall Startup_AFTER(unsigned int iShip, unsigned int iClientID)
 {
 	returncode = DEFAULT_RETURNCODE;
 
 	// Should we start the mission automatically?
-	if (bAutoStart && !bAlreadyRan)
+	if (bAutoStart)
 	{
 		try
 		{
 			HkMissionStart();
-			bAlreadyRan = true;
 		}
 		catch (...)
 		{
@@ -189,27 +82,6 @@ EXPORT void LoadSettings()
 	char* pAddress = ((char*)GetModuleHandle("content.dll") + 0xD3B0D);
 	char szNOP[] = { '\x90', '\x90','\x90','\x90','\x90','\x90' };
 	WriteProcMem(pAddress, szNOP, 6);
-
-	// install hook for trigger events
-
-	pAddressTriggerAct = ((char*)GetModuleHandle("content.dll") + 0x182C0);
-	FARPROC fpTF = (FARPROC)_HkActTrigger;
-	char szMovEDX[] = { '\xBA' };
-	char szJmpEDX[] = { '\xFF', '\xE2' };
-
-	WriteProcMem(pAddressTriggerAct, szMovEDX, 1);
-	WriteProcMem(pAddressTriggerAct + 1, &fpTF, 4);
-	WriteProcMem(pAddressTriggerAct + 5, szJmpEDX, 2);
-
-	// hook debug msg
-	char* pAddressActDebugMsg = ((char*)GetModuleHandle("content.dll") + 0x115BC4);
-	FARPROC fpADbg = (FARPROC)_HkActDebugMsg;
-	WriteProcMem(pAddressActDebugMsg, &fpADbg, 4);
-
-	// hook solar creation to fix fl-bug in MP where loadout is not sent
-	char* pAddressCreateSolar = ((char*)GetModuleHandle("content.dll") + 0x1134D4);
-	FARPROC fpHkCreateSolar = (FARPROC)HkCreateSolar;
-	WriteProcMem(pAddressCreateSolar, &fpHkCreateSolar, 4);
 
 	// The path to the configuration file.
 	char szCurDir[MAX_PATH];
@@ -295,7 +167,7 @@ EXPORT PLUGIN_INFO* Get_PluginInfo()
 	p_PI->bMayUnload = false;
 	p_PI->ePluginReturnCode = &returncode;
 	p_PI->lstHooks.push_back(PLUGIN_HOOKINFO((FARPROC*)&LoadSettings, PLUGIN_LoadSettings, 0));
-	p_PI->lstHooks.push_back(PLUGIN_HOOKINFO((FARPROC*)&PlayerLaunch_AFTER, PLUGIN_HkIServerImpl_PlayerLaunch_AFTER, 0));
+	p_PI->lstHooks.push_back(PLUGIN_HOOKINFO((FARPROC*)&Startup_AFTER, PLUGIN_HkIServerImpl_Startup_AFTER, 0));
 	p_PI->lstHooks.push_back(PLUGIN_HOOKINFO((FARPROC*)&ExecuteCommandString_Callback, PLUGIN_ExecuteCommandString_Callback, 0));
 	p_PI->lstHooks.push_back(PLUGIN_HOOKINFO((FARPROC*)&CmdHelp_Callback, PLUGIN_CmdHelp_Callback, 0));
 	return p_PI;
