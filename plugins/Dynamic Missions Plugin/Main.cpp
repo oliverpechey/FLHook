@@ -3,12 +3,10 @@
 // Includes 
 #include "FLHook.h"
 #include "plugin.h"
+#include "Main.h"
 #include <math.h>
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-EXPORT PLUGIN_RETURNCODE returncode;
 
 EXPORT PLUGIN_RETURNCODE Get_PluginReturnCode()
 {
@@ -203,17 +201,12 @@ namespace HkIEngine
 	EXPORT void __stdcall CShip_init(CShip* ship)
 	{
 		returncode = DEFAULT_RETURNCODE;
-
-		
-
 	}
 
 
 	EXPORT void __stdcall CShip_destroy(CShip* ship)
 	{
 		returncode = DEFAULT_RETURNCODE;
-
-		
 	}
 }
 
@@ -246,7 +239,7 @@ HK_ERROR HkTest2(uint iTest)
 	return HKE_OK;
 }
 
-void CmdTest(CCmds* classptr, uint iTest)
+void StartMission(CCmds* classptr, uint iTest)
 {
 
 	// right check
@@ -258,7 +251,7 @@ void CmdTest(CCmds* classptr, uint iTest)
 		classptr->PrintError();
 }
 
-void CmdTest2(CCmds* classptr, uint iTest)
+void EndMission(CCmds* classptr, uint iTest)
 {
 
 	// right check
@@ -270,9 +263,7 @@ void CmdTest2(CCmds* classptr, uint iTest)
 		classptr->PrintError();
 }
 
-#define IS_CMD(a) !wscCmd.compare(L##a)
-
-EXPORT bool ExecuteCommandString_Callback(CCmds* classptr, const std::wstring& wscCmd)
+EXPORT bool ExecuteCommandString_Callback(CCmds* cmds, const std::wstring& wscCmd)
 {
 	returncode = NOFUNCTIONCALL;  // flhook needs to care about our return code
 
@@ -280,7 +271,7 @@ EXPORT bool ExecuteCommandString_Callback(CCmds* classptr, const std::wstring& w
 
 		returncode = SKIPPLUGINS_NOFUNCTIONCALL; // do not let other plugins kick in since we now handle the command
 
-		CmdTest(classptr, classptr->ArgInt(1));
+		StartMission(cmds, cmds->ArgInt(1));
 
 		return true;
 	}
@@ -289,7 +280,7 @@ EXPORT bool ExecuteCommandString_Callback(CCmds* classptr, const std::wstring& w
 
 		returncode = SKIPPLUGINS_NOFUNCTIONCALL; // do not let other plugins kick in since we now handle the command
 
-		CmdTest2(classptr, classptr->ArgInt(1));
+		EndMission(cmds, cmds->ArgInt(1));
 
 		return true;
 	}
@@ -297,12 +288,12 @@ EXPORT bool ExecuteCommandString_Callback(CCmds* classptr, const std::wstring& w
     return false;
 }
 
-EXPORT void CmdHelp_Callback(CCmds* classptr)
+EXPORT void CmdHelp_Callback(CCmds* cmds)
 {
 	returncode = DEFAULT_RETURNCODE;
 
-	classptr->Print(L"startmission\n");
-	classptr->Print(L"endmission\n");
+	cmds->Print(L"startmission\n");
+	cmds->Print(L"endmission\n");
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////

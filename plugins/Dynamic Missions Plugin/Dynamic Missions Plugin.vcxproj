@@ -46,7 +46,7 @@
     <TargetName>Dynamic_Missions_Plugin</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <TargetName>Dynamic_Missions_Plugin</TargetName>
+    <TargetName>missions</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
