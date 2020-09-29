@@ -5,28 +5,28 @@
 // you wish without restriction. If you do then I would appreciate
 // being notified and/or mentioned somewhere.
 
-#include <errno.h>
-#include <fcntl.h>
-#include <io.h>
+#include <windows.h>
 #include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
+#include <io.h>
 #include <string>
-#include <sys/stat.h>
-#include <sys/types.h>
 #include <time.h>
-#include <windows.h>
 
-#include <FLCoreCommon.h>
-#include <FLCoreServer.h>
 #include <FLHook.h>
 #include <plugin.h>
+#include <FLCoreServer.h>
+#include <FLCoreCommon.h>
 
 #include "Mail.h"
 
-#include <list>
-#include <map>
 #include <math.h>
+#include <map>
+#include <list>
 #include <plugin_comms.h>
 #include <vector>
 
