@@ -103,10 +103,6 @@ namespace PimpShip
 		mapAvailableItems.clear();
 		set_mapDealers.clear();
 
-		// Patch BaseDataList::get_room_data to suppress annoying warnings flserver-errors.log
-		unsigned char patch1[] = { 0x90, 0x90 };
-		WriteProcMem((char*)0x62660F2, &patch1, 2);
-
 		int iItemID = 1;
 		INI_Reader ini;
 		if (ini.open(scPluginCfgFile.c_str(), false))
@@ -135,29 +131,15 @@ namespace PimpShip
 						}
 						else if (ini.is_value("room"))
 						{
-							std::string nickname = ini.get_value_string(0);
-							uint iLocationID = CreateID(nickname.c_str());
-							if (!BaseDataList_get()->get_room_data(iLocationID))
-							{
-								if (set_iPluginDebug>0)
-								{
-									ConPrint(L"NOTICE: Room %s does not exist\n", stows(nickname).c_str());
-								}
-							}
-							else
-							{
-								set_mapDealers[iLocationID] = stows(nickname);
-							}
+							std::string nickname2 = ini.get_value_string(0);
+							uint iLocationID = CreateID(nickname2.c_str());
+							set_mapDealers[iLocationID] = stows(nickname2);
 						}
 					}
 				}
 			}
 			ini.close();
 		}
-
-		// Unpatch BaseDataList::get_room_data to suppress annoying warnings flserver-errors.log
-		unsigned char unpatch1[] = { 0xFF, 0x12 };
-		WriteProcMem((char*)0x62660F2, &patch1, 2);
 	}
 
 	// On entering a room check to see if we're in a valid ship dealer room (or base if a
