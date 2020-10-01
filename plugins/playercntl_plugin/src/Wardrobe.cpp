@@ -22,11 +22,17 @@ namespace Wardrobe
 
 	bool Wardrobe::UserCmd_ShowWardrobe(uint iClientID, const std::wstring& wscCmd, const std::wstring& wscParam, const wchar_t* usage)
 	{
+		PrintUserCmdText(iClientID, L"Heads:");
+		std::wstring wscHeads;
 		for (auto& [name, id] : heads)
-			PrintUserCmdText(iClientID, L"Head: " + stows(name));
+			wscHeads += (stows(name) + L" | ");
+		PrintUserCmdText(iClientID, wscHeads);
 
+		PrintUserCmdText(iClientID, L"Bodies:");
+		std::wstring wscBodies;
 		for (auto& [name, id] : bodies)
-			PrintUserCmdText(iClientID, L"Body: " + stows(name));
+			wscBodies += (stows(name) + L" | ");
+		PrintUserCmdText(iClientID, wscBodies);
 
 		return true;
 	}
