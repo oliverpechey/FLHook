@@ -255,23 +255,23 @@ void Message::LoadSettings(const std::string &scPluginCfgFile) {
       if (ini.is_header("GreetingBanner")) {
         while (ini.read_value()) {
           set_lstGreetingBannerLines.push_back(
-              stows(ini.get_value_string()));
+              Trim(stows(ini.get_value_string())));
         }
       } else if (ini.is_header("SpecialBanner")) {
         while (ini.read_value()) {
           set_lstSpecialBannerLines.push_back(
-              stows(ini.get_value_string()));
+              Trim(stows(ini.get_value_string())));
         }
       } else if (ini.is_header("StandardBanner")) {
         std::list<std::wstring> lstStandardBannerSection;
         while (ini.read_value()) {
           lstStandardBannerSection.push_back(
-              stows(ini.get_value_string()));
+              Trim(stows(ini.get_value_string())));
         }
         set_vctStandardBannerLines.push_back(lstStandardBannerSection);
       } else if (ini.is_header("SwearWords")) {
         while (ini.read_value()) {
-          std::wstring word = stows(ini.get_value_string());
+          std::wstring word = Trim(stows(ini.get_value_string()));
           word = ReplaceStr(word, L"_", L" ");
           set_lstSwearWords.push_back(word);
         }
