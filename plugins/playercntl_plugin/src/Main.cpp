@@ -409,7 +409,6 @@ void __stdcall DisConnect(unsigned int iClientID, enum EFLConnection state) {
 void __stdcall CharacterSelect_AFTER(struct CHARACTER_ID const &charId,
                                      unsigned int iClientID) {
   returncode = DEFAULT_RETURNCODE;
-  ClearClientInfo(iClientID);
   Rename::CharacterSelect_AFTER(charId, iClientID);
 }
 
