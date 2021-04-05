@@ -58,7 +58,10 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="AdminCmds.cpp" />
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="Survival.cpp" />
+    <ClCompile Include="Utilities.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\project\FLHook.vcxproj">
