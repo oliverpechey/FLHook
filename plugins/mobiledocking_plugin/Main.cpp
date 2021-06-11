@@ -262,7 +262,7 @@ bool UserCmd_Process(uint client, const std::wstring &wscCmd) {
         // Delete the docking request and dock the player.
         mapPendingDockingRequests.erase(iTargetClientID);
 
-        std::string scProxyBase = HkGetPlayerSystemS(client) + "_proxy_base";
+        std::string scProxyBase = "Li01_01_Base";
         uint iBaseID;
         if (pub::GetBaseID(iBaseID, scProxyBase.c_str()) == -4) {
             PrintUserCmdText(client, L"No proxy base, contact administrator");
@@ -293,6 +293,21 @@ bool UserCmd_Process(uint client, const std::wstring &wscCmd) {
         pub::Player::ForceLand(iTargetClientID, iBaseID);
         PrintUserCmdText(client, L"Ship docked");
         return true;
+    } else if (wscCmd.find(L"/dock") == 0) {
+
+        uint iShip;
+        pub::Player::GetShip(client, iShip);
+        if (!iShip)
+            return true;
+
+        std::string scProxyBase = "Li01_01_Base";
+        uint iBaseID;
+        if (pub::GetBaseID(iBaseID, scProxyBase.c_str()) == -4) {
+            PrintUserCmdText(client, L"No proxy base, contact administrator");
+            return true;
+        }
+
+        pub::SpaceObj::DockRequest(iShip, iBaseID);
     }
     return false;
 }

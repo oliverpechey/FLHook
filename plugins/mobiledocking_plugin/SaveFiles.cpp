@@ -5,7 +5,7 @@ void LoadDockInfo(uint client) {
     CLIENT_DATA &cd = clients[client];
 
     // How many docking modules do we have?
-    cd.iDockingModules = 0;
+    cd.iDockingModules = 5;
     cd.mapDockedShips.clear();
 
     for (auto item = Players[client].equipDescList.equip.begin();
