@@ -61,6 +61,7 @@
     <ClCompile Include="AdminCmds.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Survival.cpp" />
+    <ClCompile Include="UserCmds.cpp" />
     <ClCompile Include="Utilities.cpp" />
   </ItemGroup>
   <ItemGroup>

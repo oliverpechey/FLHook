@@ -37,7 +37,7 @@ void LoadSurvivalSettings(const std::string& scPluginCfgFile) {
                             pos++;
 
                             for (int i = 0; i < num; i++)
-                                wave.NPCs.push_back(ship);
+                                wave.lstSpawnedNPCs.push_back(ship);
                         }
 
                         survival.Waves.push_back(wave);
@@ -184,7 +184,7 @@ void NewWave(GAME & game) {
     pub::Player::GetShip(game.StoreMemberList.front(), iShip);
     pub::SpaceObj::GetLocation(iShip, pos, rot);
 
-    for (auto &npc : game.Survival.Waves.at(game.iWaveNumber).NPCs) {
+    for (auto &npc : game.Survival.Waves.at(game.iWaveNumber).lstSpawnedNPCs) {
         game.iSpawnedNPCs.push_back(Utilities::CreateNPC(npc, pos, rot, game.iSystemID,
                                                true));
         Utilities::Log_CreateNPC(npc);

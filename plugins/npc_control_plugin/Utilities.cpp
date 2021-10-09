@@ -117,7 +117,7 @@ uint CreateNPC(std::wstring name, Vector pos, Matrix rot, uint iSystem,
     pub::AI::SubmitState(iSpaceObj, &pers);
 
     // Add the NPC to our list
-    Main::NPCs.push_back(iSpaceObj);
+    Main::lstSpawnedNPCs.push_back(iSpaceObj);
     return iSpaceObj;
 }
 

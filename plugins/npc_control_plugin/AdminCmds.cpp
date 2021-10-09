@@ -57,10 +57,10 @@ void AdminCmd_AIKill(CCmds *cmds) {
         return;
     }
 
-    for (auto &npc : Main::NPCs)
+    for (auto &npc : Main::lstSpawnedNPCs)
         pub::SpaceObj::Destroy(npc, DestroyType::FUSE);
 
-    Main::NPCs.clear();
+    Main::lstSpawnedNPCs.clear();
     cmds->Print(L"OK\n");
 
     return;
@@ -81,7 +81,7 @@ void AdminCmd_AICome(CCmds *cmds) {
         Matrix rot;
         pub::SpaceObj::GetLocation(iShip1, pos, rot);
 
-        for (auto &npc : Main::NPCs) {
+        for (auto &npc : Main::lstSpawnedNPCs) {
             pub::AI::DirectiveCancelOp cancelOP;
             pub::AI::SubmitDirective(npc, &cancelOP);
 
@@ -122,7 +122,7 @@ void AdminCmd_AIFollow(CCmds *cmds, std::wstring &wscCharname) {
         uint iShip1;
         pub::Player::GetShip(iClientId, iShip1);
         if (iShip1) {
-            for (auto &npc : Main::NPCs) {
+            for (auto &npc : Main::lstSpawnedNPCs) {
                 pub::AI::DirectiveCancelOp cancelOP;
                 pub::AI::SubmitDirective(npc, &cancelOP);
                 pub::AI::DirectiveFollowOp testOP;
@@ -149,7 +149,7 @@ void AdminCmd_AICancel(CCmds *cmds) {
     pub::Player::GetShip(HkGetClientIdFromCharname(cmds->GetAdminName()),
                          iShip1);
     if (iShip1) {
-        for (auto &npc : Main::NPCs) {
+        for (auto &npc : Main::lstSpawnedNPCs) {
             pub::AI::DirectiveCancelOp testOP;
             pub::AI::SubmitDirective(npc, &testOP);
         }

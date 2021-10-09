@@ -52,7 +52,7 @@ namespace Main {
     
     extern std::map<std::wstring, NPC_ARCHTYPESSTRUCT> mapNPCArchtypes;
     extern std::map<std::wstring, NPC_FLEETSTRUCT> mapNPCFleets;
-    extern std::list<uint> NPCs;
+    extern std::list<uint> lstSpawnedNPCs;
 
     bool IsFLHookNPC(CShip *ship);
 }
@@ -74,7 +74,7 @@ namespace Utilities {
 namespace Survival {
 
     struct WAVE {
-        std::list<std::wstring> NPCs;
+        std::list<std::wstring> lstSpawnedNPCs;
         uint iReward;
     };
 
@@ -111,4 +111,9 @@ namespace Survival {
 
 namespace AdminCmds {
     bool ExecuteCommandString_Callback(CCmds *cmds, const std::wstring &wscCmd);
+}
+
+namespace UserCmds {
+    bool UserCmd_Process(uint iClientID, const std::wstring &wscCmd);
+    EXPORT void UserCmd_Help(uint iClientID, const std::wstring &wscParam);
 }

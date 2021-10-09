@@ -14,8 +14,8 @@ namespace Main {
 // Structures and Global Variables
 std::map<std::wstring, NPC_ARCHTYPESSTRUCT> mapNPCArchtypes;
 std::map<std::wstring, NPC_FLEETSTRUCT> mapNPCFleets;
-std::list<uint> NPCs;
-static std::map<int, NPC> startupNPCs;
+static std::map<int, NPC> mapNPCStartup;
+std::list<uint> lstSpawnedNPCs;
 
 PLUGIN_RETURNCODE returncode;
 
@@ -27,11 +27,11 @@ bool IsFLHookNPC(CShip *ship) {
     }
 
     // Is it a FLHook NPC?
-    std::list<uint>::iterator iter = Main::NPCs.begin();
-    while (iter != Main::NPCs.end()) {
+    std::list<uint>::iterator iter = Main::lstSpawnedNPCs.begin();
+    while (iter != Main::lstSpawnedNPCs.end()) {
         if (*iter == ship->get_id()) {
             ship->clear_equip_and_cargo();
-            NPCs.erase(iter);
+            lstSpawnedNPCs.erase(iter);
             Survival::NPCDestroyed(ship);
             return true;
             break;
@@ -77,50 +77,47 @@ void LoadNPCInfo() {
     INI_Reader ini;
     if (ini.open(scPluginCfgFile.c_str(), false)) {
         while (ini.read_header()) {
-            // These are the individual types of NPCs that can be spawned by the plugin or by an eadmin
+            // These are the individual types of NPCs that can be spawned by the plugin or by an admin
             if (ini.is_header("npcs")) {
-                NPC_ARCHTYPESSTRUCT setnpcstruct;
+                NPC_ARCHTYPESSTRUCT npc;
                 while (ini.read_value()) {
                     if (ini.is_value("npc")) {
-                        std::string setnpcname = ini.get_value_string(0);
-                        std::wstring thenpcname = stows(setnpcname);
-                        setnpcstruct.Shiparch =
+                        std::wstring wscName =
+                            stows(ini.get_value_string(0));
+                        npc.Shiparch =
                             CreateID(ini.get_value_string(1));
-                        setnpcstruct.Loadout =
+                        npc.Loadout =
                             CreateID(ini.get_value_string(2));
 
                         // IFF calc
                         pub::Reputation::GetReputationGroup(
-                            setnpcstruct.IFF, ini.get_value_string(3));
+                            npc.IFF, ini.get_value_string(3));
 
                         // Selected graph + Pilot
-                        setnpcstruct.Graph = ini.get_value_int(4); 
-                        setnpcstruct.Pilot = CreateID(ini.get_value_string(5));
+                        npc.Graph = ini.get_value_int(4); 
+                        npc.Pilot = CreateID(ini.get_value_string(5));
 
                         // Infocard
-                        setnpcstruct.Infocard = ini.get_value_int(6);
-                        setnpcstruct.Infocard2 = ini.get_value_int(7);
+                        npc.Infocard = ini.get_value_int(6);
+                        npc.Infocard2 = ini.get_value_int(7);
 
-                        mapNPCArchtypes[thenpcname] = setnpcstruct;
+                        mapNPCArchtypes[wscName] = npc;
                     }
                 }
             // These are collections of NPCs that can be spawned all at once
             } else if (ini.is_header("fleet")) {
-                NPC_FLEETSTRUCT setfleet;
-                std::wstring thefleetname;
+                NPC_FLEETSTRUCT fleet;
                 while (ini.read_value()) {
                     if (ini.is_value("fleetname")) {
-                        std::string setfleetname = ini.get_value_string(0);
-                        thefleetname = stows(setfleetname);
-                        setfleet.fleetname = stows(setfleetname);
+                        fleet.fleetname = stows(ini.get_value_string(0));
                     } else if (ini.is_value("fleetmember")) {
                         std::string setmembername = ini.get_value_string(0);
                         std::wstring membername = stows(setmembername);
                         int amount = ini.get_value_int(1);
-                        setfleet.fleetmember[membername] = amount;
+                        fleet.fleetmember[membername] = amount;
                     }
                 }
-                mapNPCFleets[thefleetname] = setfleet;
+                mapNPCFleets[fleet.fleetname] = fleet;
             // Infocards to use for name generation when an infocard isn't specified
             } else if (ini.is_header("names")) {
                 while (ini.read_value()) {
@@ -147,7 +144,7 @@ void LoadNPCInfo() {
                         n.rot.data[2][1] = ini.get_value_float(11);
                         n.rot.data[2][2] = ini.get_value_float(12);
                         n.system = CreateID(ini.get_value_string(13));
-                        startupNPCs[startupNPCs.size()] = n;
+                        mapNPCStartup[mapNPCStartup.size()] = n;
                     }
                 }
             }
@@ -171,7 +168,7 @@ void Startup_AFTER() {
         "CRUISER"); // 3, doesn't seem to do anything
 
     // Spawns the NPCs configured on startup
-    for (auto &[id, npc] : startupNPCs) {
+    for (auto &[id, npc] : mapNPCStartup) {
         Utilities::CreateNPC(npc.name, npc.pos, npc.rot, npc.system, false);
         Utilities::Log_CreateNPC(npc.name);
     }
@@ -181,53 +178,6 @@ void Startup_AFTER() {
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // FLHOOK STUFF
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-// Client command processing
-USERCMD UserCmds[] = {
-    {L"/survival", Survival::NewGame, L"Usage: /survival"},
-};
-
-bool UserCmd_Process(uint iClientID, const std::wstring &wscCmd) {
-    Main::returncode = DEFAULT_RETURNCODE;
-
-    std::wstring wscCmdLineLower = ToLower(wscCmd);
-
-    // If the chat string does not match the USER_CMD then we do not handle the
-    // command, so let other plugins or FLHook kick in. We require an exact
-    // match
-    for (uint i = 0; (i < sizeof(UserCmds) / sizeof(USERCMD)); i++) {
-
-        if (wscCmdLineLower.find(UserCmds[i].wszCmd) == 0) {
-            // Extract the parameters string from the chat string. It should
-            // be immediately after the command and a space.
-            std::wstring wscParam = L"";
-            if (wscCmd.length() > wcslen(UserCmds[i].wszCmd)) {
-                if (wscCmd[wcslen(UserCmds[i].wszCmd)] != ' ')
-                    continue;
-                wscParam = wscCmd.substr(wcslen(UserCmds[i].wszCmd) + 1);
-            }
-
-            // Dispatch the command to the appropriate processing function.
-            if (UserCmds[i].proc(iClientID, wscCmd, wscParam,
-                                 UserCmds[i].usage)) {
-                // We handled the command tell FL hook to stop processing this
-                // chat string.
-                Main::returncode =
-                    SKIPPLUGINS_NOFUNCTIONCALL; // we handled the command,
-                                                // return immediatly
-                return true;
-            }
-        }
-    }
-    return false;
-}
-
-// Hook on /help
-EXPORT void UserCmd_Help(uint iClientID, const std::wstring &wscParam) {
-    PrintUserCmdText(iClientID, L"/survival ");
-    PrintUserCmdText(iClientID,
-                     L"Starts a Survival game. All members of the group need to be in space and in the same System.");
-}
 
 // Do things when the dll is loaded
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
@@ -266,9 +216,9 @@ EXPORT PLUGIN_INFO *Get_PluginInfo() {
     p_PI->lstHooks.push_back(PLUGIN_HOOKINFO((FARPROC *)&Main::PlayerLaunch,
                                              PLUGIN_HkIServerImpl_PlayerLaunch,
                                              0));
-    p_PI->lstHooks.push_back(PLUGIN_HOOKINFO((FARPROC *)&UserCmd_Process,
+    p_PI->lstHooks.push_back(PLUGIN_HOOKINFO((FARPROC *)&UserCmds::UserCmd_Process,
                                              PLUGIN_UserCmd_Process, 0));
-    p_PI->lstHooks.push_back(
-        PLUGIN_HOOKINFO((FARPROC *)&UserCmd_Help, PLUGIN_UserCmd_Help, 0));
+    p_PI->lstHooks.push_back(PLUGIN_HOOKINFO((FARPROC *)&UserCmds::UserCmd_Help,
+                                             PLUGIN_UserCmd_Help, 0));
     return p_PI;
 }
