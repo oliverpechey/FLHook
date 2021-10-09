@@ -176,10 +176,7 @@ bool NewGame(uint iClientID, const std::wstring &wscCmd,
 }
 
 void NewWave(GAME & game) {
-    // Defend yourself!
-    for (auto const &player : game.StoreMemberList)
-        ShowPlayerMissionText(player, 22612, MissionMessageType_Type2);
-
+    
     // Spawn NPCS
     uint iShip;
     Vector pos;
@@ -191,6 +188,20 @@ void NewWave(GAME & game) {
         game.iSpawnedNPCs.push_back(Utilities::CreateNPC(npc, pos, rot, game.iSystemID,
                                                true));
         Utilities::Log_CreateNPC(npc);
+    }
+
+    // Actions for all players in group
+    for (auto const &player : game.StoreMemberList) {
+        // Defend yourself!
+        ShowPlayerMissionText(player, 22612, MissionMessageType_Type2);
+        // Set all enemies to be hostile
+        for (auto &npc : game.iSpawnedNPCs) {
+            int iRep;
+            pub::Player::GetRep(player, iRep);
+            int iRepNPC;
+            pub::SpaceObj::GetRep(npc,iRepNPC);
+            pub::Reputation::SetAttitude(iRepNPC, iRep, -0.9f);
+        }
     }
 }
 

@@ -103,11 +103,6 @@ uint CreateNPC(std::wstring name, Vector pos, Matrix rot, uint iSystem,
     // Set the faction of the NPC
     pub::Reputation::SetAffiliation(si.iRep, arch.IFF);
 
-    // Get the rep of the player and set the attitude to enemy (This is hardcoded for iClientID 1 and hostile for now). Needs to be improved.
-    int rep;
-    pub::Player::GetRep(1, rep);
-    pub::Reputation::SetAttitude(si.iRep, rep, -0.9f);
-
     // Create the NPC in space
     uint iSpaceObj;
     pub::SpaceObj::Create(iSpaceObj, si);
