@@ -101,9 +101,40 @@ bool PlayerChecks(uint iClientID, uint iMember, uint iSystemID) {
     return true;
 }
 
+void NewWave(GAME & game) {
+    
+    // Spawn NPCS
+    uint iShip;
+    Vector pos;
+    Matrix rot;
+    pub::Player::GetShip(game.StoreMemberList.front(), iShip);
+    pub::SpaceObj::GetLocation(iShip, pos, rot);
+
+    for (auto &npc : game.Survival.Waves.at(game.iWaveNumber).lstSpawnedNPCs) {
+        game.iSpawnedNPCs.push_back(
+            NPCs::CreateNPC(npc, pos, rot, game.iSystemID,
+                                               true));
+        NPCs::Log_CreateNPC(npc);
+    }
+
+    // Actions for all players in group
+    for (auto const &player : game.StoreMemberList) {
+        // Defend yourself!
+        ShowPlayerMissionText(player, 22612, MissionMessageType_Type2);
+        // Set all enemies to be hostile
+        for (auto &npc : game.iSpawnedNPCs) {
+            int iRep;
+            pub::Player::GetRep(player, iRep);
+            int iRepNPC;
+            pub::SpaceObj::GetRep(npc,iRepNPC);
+            pub::Reputation::SetAttitude(iRepNPC, iRep, -0.9f);
+        }
+    }
+}
+
 bool NewGame(uint iClientID, const std::wstring &wscCmd,
              const std::wstring &wscParam, const wchar_t *usage) {
-	// Initialise game struct
+    // Initialise game struct
     GAME game;
     game.iWaveNumber = 0;
     pub::Player::GetSystem(iClientID, game.iSystemID);
@@ -127,7 +158,7 @@ bool NewGame(uint iClientID, const std::wstring &wscCmd,
         }
         PrintUserCmdText(iClientID,
                          L"There isn't an available game in this System.");
-        return true;   
+        return true;
     }
 
     // Is there anyone in the system who isn't in the group?
@@ -144,7 +175,7 @@ bool NewGame(uint iClientID, const std::wstring &wscCmd,
         }
     }
 
-	// Is player in a group?
+    // Is player in a group?
     game.iGroupID = Players.GetGroupID(iClientID);
     if (game.iGroupID != 0) {
         // Get players in the group
@@ -156,8 +187,8 @@ bool NewGame(uint iClientID, const std::wstring &wscCmd,
     } else
         // Store just the player
         game.StoreMemberList.push_back(iClientID);
-    
-       // Check each member of the group passes the checks
+
+    // Check each member of the group passes the checks
     for (auto const &player : game.StoreMemberList) {
         if (!PlayerChecks(iClientID, player, game.iSystemID))
             return true;
@@ -167,7 +198,7 @@ bool NewGame(uint iClientID, const std::wstring &wscCmd,
         HkRelocateClient(player, game.Survival.pos, rot);
 
         // Play start sound
-        pub::Audio::PlaySoundEffect(player,CreateID("rmb_inrangeships_01-"));
+        pub::Audio::PlaySoundEffect(player, CreateID("rmb_inrangeships_01-"));
     }
 
     NewWave(game);
@@ -175,49 +206,24 @@ bool NewGame(uint iClientID, const std::wstring &wscCmd,
     return true;
 }
 
-void NewWave(GAME & game) {
-    
-    // Spawn NPCS
-    uint iShip;
-    Vector pos;
-    Matrix rot;
-    pub::Player::GetShip(game.StoreMemberList.front(), iShip);
-    pub::SpaceObj::GetLocation(iShip, pos, rot);
-
-    for (auto &npc : game.Survival.Waves.at(game.iWaveNumber).lstSpawnedNPCs) {
-        game.iSpawnedNPCs.push_back(Utilities::CreateNPC(npc, pos, rot, game.iSystemID,
-                                               true));
-        Utilities::Log_CreateNPC(npc);
-    }
-
-    // Actions for all players in group
+void EndSurvival(GAME &game) {
     for (auto const &player : game.StoreMemberList) {
-        // Defend yourself!
-        ShowPlayerMissionText(player, 22612, MissionMessageType_Type2);
-        // Set all enemies to be hostile
-        for (auto &npc : game.iSpawnedNPCs) {
-            int iRep;
-            pub::Player::GetRep(player, iRep);
-            int iRepNPC;
-            pub::SpaceObj::GetRep(npc,iRepNPC);
-            pub::Reputation::SetAttitude(iRepNPC, iRep, -0.9f);
-        }
+        // Mission Result: Success
+        ShowPlayerMissionText(player, 1231, MissionMessageType_Type3);
+
+        // You did it, area is clear. Good job.
+        pub::Audio::PlaySoundEffect(player, CreateID("rmb_success_ships_01-"));
     }
-}
 
-// This is only called when it's an FLHook spawned NPC (see main.cpp)
-void NPCDestroyed(CShip *ship) {
-    for (auto &game : Games) {
+    // Remove game from list
+    Games.remove(game);
 
-        // Remove NPC if part of a wave
-        game.iSpawnedNPCs.remove(ship->get_id());
-        
-        // If there's no more NPCs, end of the wave
-        if (game.iSpawnedNPCs.empty())
-            EndWave(game);
-
-        return;
-    }
+    // Red Text Universe
+    wchar_t *wszActiveCharname =
+        (wchar_t *)Players.GetActiveCharacterName(game.StoreMemberList.front());
+    std::wstring msg = std::wstring(wszActiveCharname) +
+                       L" and their team have completed a Survival.";
+    Utilities::SendUniverseChatRedText(msg);
 }
 
 void EndWave(GAME & game) {
@@ -247,24 +253,19 @@ void EndWave(GAME & game) {
         NewWave(game);
 }
 
-void EndSurvival(GAME &game) {
-    for (auto const &player : game.StoreMemberList) {
-        // Mission Result: Success
-        ShowPlayerMissionText(player, 1231, MissionMessageType_Type3);
-        
-        // You did it, area is clear. Good job.
-        pub::Audio::PlaySoundEffect(player, CreateID("rmb_success_ships_01-"));
+// This is only called when it's an FLHook spawned NPC (see main.cpp)
+void NPCDestroyed(CShip *ship) {
+    for (auto &game : Games) {
+
+        // Remove NPC if part of a wave
+        game.iSpawnedNPCs.remove(ship->get_id());
+
+        // If there's no more NPCs, end of the wave
+        if (game.iSpawnedNPCs.empty())
+            EndWave(game);
+
+        return;
     }
-
-    // Remove game from list
-    Games.remove(game);
-
-	// Red Text Universe
-    wchar_t *wszActiveCharname =
-        (wchar_t *)Players.GetActiveCharacterName(game.StoreMemberList.front());
-    std::wstring msg = std::wstring(wszActiveCharname) +
-                       L" and their team have completed a Survival.";
-    Utilities::SendUniverseChatRedText(msg);
 }
 
 void Disqualify(uint iClientID) {
@@ -301,6 +302,23 @@ void Disqualify(uint iClientID) {
         }
     }
 }
+
+// Disqualify from survival if these hooks go off
+void __stdcall DisConnect(unsigned int iClientID, enum EFLConnection state) {
+    returncode = DEFAULT_RETURNCODE;
+    Survival::Disqualify(iClientID);
+}
+
+void __stdcall BaseEnter(unsigned int iBaseID, unsigned int iClientID) {
+    returncode = DEFAULT_RETURNCODE;
+    Survival::Disqualify(iClientID);
+}
+
+void __stdcall PlayerLaunch(unsigned int iShip, unsigned int iClientID) {
+    returncode = DEFAULT_RETURNCODE;
+    Survival::Disqualify(iClientID);
+}
+
 }
 
 //Death msg hook

@@ -9,7 +9,7 @@ USERCMD UserCmds[] = {
 };
 
 bool UserCmd_Process(uint iClientID, const std::wstring &wscCmd) {
-    Main::returncode = DEFAULT_RETURNCODE;
+    returncode = DEFAULT_RETURNCODE;
 
     std::wstring wscCmdLineLower = ToLower(wscCmd);
 
@@ -33,7 +33,7 @@ bool UserCmd_Process(uint iClientID, const std::wstring &wscCmd) {
                                  UserCmds[i].usage)) {
                 // We handled the command tell FL hook to stop processing this
                 // chat string.
-                Main::returncode =
+                returncode =
                     SKIPPLUGINS_NOFUNCTIONCALL; // we handled the command,
                                                 // return immediatly
                 return true;

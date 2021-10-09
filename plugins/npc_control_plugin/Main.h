@@ -13,20 +13,11 @@
 #include <time.h>
 #include <windows.h>
 
-typedef bool (*_UserCmdProc)(uint, const std::wstring &, const std::wstring &,
-                             const wchar_t *);
-
-struct USERCMD {
-    wchar_t *wszCmd;
-    _UserCmdProc proc;
-    wchar_t *usage;
-};
+extern PLUGIN_RETURNCODE returncode;
 
 #define IS_CMD(a) !wscCmd.compare(L##a)
 
-namespace Main {
-
-     extern PLUGIN_RETURNCODE returncode;
+namespace NPCs {
 
     struct NPC_ARCHTYPESSTRUCT {
         uint Shiparch;
@@ -54,17 +45,17 @@ namespace Main {
     extern std::map<std::wstring, NPC_FLEETSTRUCT> mapNPCFleets;
     extern std::list<uint> lstSpawnedNPCs;
 
-    bool IsFLHookNPC(CShip *ship);
-}
+    void __stdcall ShipDestroyed(DamageList *_dmg, DWORD *ecx, uint iKill);
+    void Startup_AFTER();
+    uint CreateNPC(std::wstring name, Vector pos, Matrix rot, uint iSystem,
+                   bool varyPos);
+    void Log_CreateNPC(std::wstring name);
+    }
 
 namespace Utilities {
 
-    extern std::vector<const char *> listgraphs;
     extern std::vector<uint> npcnames;
 
-    uint CreateNPC(std::wstring name, Vector pos, Matrix rot, uint iSystem,
-               bool varyPos);
-    void Log_CreateNPC(std::wstring name);
     void Logging(const char *szString, ...);
     uint rand_name();
     float rand_FloatRange(float a, float b);
@@ -102,11 +93,10 @@ namespace Survival {
     void LoadSurvivalSettings(const std::string &scPluginCfgFile);
     bool NewGame(uint iClientID, const std::wstring &wscCmd,
                  const std::wstring &wscParam, const wchar_t *usage);
-    void NewWave(GAME &game);
     void NPCDestroyed(CShip *ship);
-    void EndWave(GAME &game);
-    void EndSurvival(GAME &game);
-    void Disqualify(uint iClientID);
+    void __stdcall DisConnect(unsigned int iClientID, enum EFLConnection state);
+    void __stdcall BaseEnter(unsigned int iBaseID, unsigned int iClientID);
+    void __stdcall PlayerLaunch(unsigned int iShip, unsigned int iClientID);
 }
 
 namespace AdminCmds {
@@ -114,6 +104,15 @@ namespace AdminCmds {
 }
 
 namespace UserCmds {
+    typedef bool (*_UserCmdProc)(uint, const std::wstring &, const std::wstring &,
+                             const wchar_t *);
+
+    struct USERCMD {
+        wchar_t *wszCmd;
+        _UserCmdProc proc;
+        wchar_t *usage;
+    };
+
     bool UserCmd_Process(uint iClientID, const std::wstring &wscCmd);
     EXPORT void UserCmd_Help(uint iClientID, const std::wstring &wscParam);
 }
