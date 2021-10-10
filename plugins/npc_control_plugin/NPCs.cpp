@@ -211,7 +211,6 @@ void LoadNPCInfo() {
         }
         ini.close();
     }
-    Survival::LoadSurvivalSettings(scPluginCfgFile);
 }
 
 // Had to use this hookinstead of LoadSettings otherwise NPCs wouldnt appear on

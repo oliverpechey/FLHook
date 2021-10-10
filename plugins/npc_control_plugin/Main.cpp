@@ -10,6 +10,7 @@
 #include "Main.h"
 
 PLUGIN_RETURNCODE returncode;
+bool set_bEnableSurvival = false;
 
 // Do things when the dll is loaded
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
@@ -52,5 +53,7 @@ EXPORT PLUGIN_INFO *Get_PluginInfo() {
                                              PLUGIN_UserCmd_Process, 0));
     p_PI->lstHooks.push_back(PLUGIN_HOOKINFO((FARPROC *)&UserCmds::UserCmd_Help,
                                              PLUGIN_UserCmd_Help, 0));
+    p_PI->lstHooks.push_back(
+        PLUGIN_HOOKINFO((FARPROC *)&Survival::LoadSettings, PLUGIN_LoadSettings, 0));
     return p_PI;
 }

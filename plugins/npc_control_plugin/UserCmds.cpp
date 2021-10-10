@@ -45,9 +45,11 @@ bool UserCmd_Process(uint iClientID, const std::wstring &wscCmd) {
 
 // Hook on /help
 EXPORT void UserCmd_Help(uint iClientID, const std::wstring &wscParam) {
-    PrintUserCmdText(iClientID, L"/survival ");
-    PrintUserCmdText(iClientID,
-                     L"Starts a Survival game. All members of the group need "
-                     L"to be in space and in the same System.");
+    if (set_bEnableSurvival) {
+        PrintUserCmdText(iClientID, L"/survival ");
+        PrintUserCmdText(
+            iClientID, L"Starts a Survival game. All members of the group need "
+                       L"to be in space and in the same System.");
+    }
 }
 }

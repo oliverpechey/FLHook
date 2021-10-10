@@ -14,6 +14,7 @@
 #include <windows.h>
 
 extern PLUGIN_RETURNCODE returncode;
+extern bool set_bEnableSurvival;
 
 #define IS_CMD(a) !wscCmd.compare(L##a)
 
@@ -50,7 +51,7 @@ namespace NPCs {
     uint CreateNPC(std::wstring name, Vector pos, Matrix rot, uint iSystem,
                    bool varyPos);
     void Log_CreateNPC(std::wstring name);
-    }
+}
 
 namespace Utilities {
 
@@ -60,7 +61,7 @@ namespace Utilities {
     uint rand_name();
     float rand_FloatRange(float a, float b);
     void SendUniverseChatRedText(std::wstring wscXMLText);
-    }
+}
 
 namespace Survival {
 
@@ -90,13 +91,13 @@ namespace Survival {
         };
     };
 
-    void LoadSurvivalSettings(const std::string &scPluginCfgFile);
     bool NewGame(uint iClientID, const std::wstring &wscCmd,
                  const std::wstring &wscParam, const wchar_t *usage);
     void NPCDestroyed(CShip *ship);
     void __stdcall DisConnect(unsigned int iClientID, enum EFLConnection state);
     void __stdcall BaseEnter(unsigned int iBaseID, unsigned int iClientID);
     void __stdcall PlayerLaunch(unsigned int iShip, unsigned int iClientID);
+    void LoadSettings();
 }
 
 namespace AdminCmds {

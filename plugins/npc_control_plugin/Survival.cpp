@@ -11,7 +11,17 @@ namespace Survival {
 std::list<GAME> Games;
 std::list<SURVIVAL> Survivals;
 
-void LoadSurvivalSettings(const std::string& scPluginCfgFile) {
+void LoadSettings() {
+
+    // The path to the configuration file.
+    char szCurDir[MAX_PATH];
+    GetCurrentDirectory(sizeof(szCurDir), szCurDir);
+    std::string scPluginCfgFile =
+        std::string(szCurDir) + "\\flhook_plugins\\npc.cfg";
+
+    set_bEnableSurvival =
+        IniGetB(scPluginCfgFile, "General", "EnableSurvival", false);
+
     Games.clear();
     INI_Reader ini;
     if (ini.open(scPluginCfgFile.c_str(), false)) {
@@ -134,6 +144,12 @@ void NewWave(GAME & game) {
 
 bool NewGame(uint iClientID, const std::wstring &wscCmd,
              const std::wstring &wscParam, const wchar_t *usage) {
+
+    if (!set_bEnableSurvival) {
+        PrintUserCmdText(iClientID, L"Survival games are not enabled on this server.");
+        return true;
+    }
+
     // Initialise game struct
     GAME game;
     game.iWaveNumber = 0;
