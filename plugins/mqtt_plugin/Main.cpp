@@ -100,6 +100,22 @@ void __stdcall PlayerLaunch_AFTER(unsigned int iShip, unsigned int client) {
     std::get<0>(mqttClient)->publish(pubmsg);
 }
 
+// This hook fires around once a second. Using this to report load times back to the MQTT server
+void __stdcall CheckKick() {
+    returncode = DEFAULT_RETURNCODE;
+
+    // Create payload for load message
+    mqtt::message_ptr loadmsg =
+        mqtt::make_message("load", std::to_string(g_iServerLoad));
+    loadmsg->set_qos(1);
+
+    // Check to ensure we are connected to the broker
+    if (!std::get<0>(mqttClient)->is_connected())
+        mqttClient = ConnectBroker();
+
+    // Send the message
+    std::get<0>(mqttClient)->publish(loadmsg);
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // FLHOOK STUFF
@@ -120,17 +136,19 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 }
 
 // Functions to hook
-EXPORT PLUGIN_INFO* Get_PluginInfo()
-{
-	PLUGIN_INFO* p_PI = new PLUGIN_INFO();
-	p_PI->sName = "MQTT by Raikkonen";
-	p_PI->sShortName = "MQTT";
-	p_PI->bMayPause = true;
-	p_PI->bMayUnload = true;
-	p_PI->ePluginReturnCode = &returncode;
-	p_PI->lstHooks.push_back(PLUGIN_HOOKINFO((FARPROC*)&LoadSettings, PLUGIN_LoadSettings, 0));
+EXPORT PLUGIN_INFO *Get_PluginInfo() {
+    PLUGIN_INFO *p_PI = new PLUGIN_INFO();
+    p_PI->sName = "MQTT by Raikkonen";
+    p_PI->sShortName = "MQTT";
+    p_PI->bMayPause = true;
+    p_PI->bMayUnload = true;
+    p_PI->ePluginReturnCode = &returncode;
+    p_PI->lstHooks.push_back(
+        PLUGIN_HOOKINFO((FARPROC *)&LoadSettings, PLUGIN_LoadSettings, 0));
     p_PI->lstHooks.push_back(
         PLUGIN_HOOKINFO((FARPROC *)&PlayerLaunch_AFTER,
                         PLUGIN_HkIServerImpl_PlayerLaunch_AFTER, 0));
-	return p_PI;
+    p_PI->lstHooks.push_back(
+        PLUGIN_HOOKINFO((FARPROC *)&CheckKick, PLUGIN_HkTimerCheckKick, 0));
+    return p_PI;
 }
