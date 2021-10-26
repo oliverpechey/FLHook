@@ -3,6 +3,7 @@
   "name": "mqtt-flhook",
   "version": "1.0.0",
   "dependencies": [
-	"paho-mqttpp3"
+	"paho-mqttpp3",
+	"nlohmann-json"
   ]
 }

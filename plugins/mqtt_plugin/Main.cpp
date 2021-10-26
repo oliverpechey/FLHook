@@ -9,6 +9,10 @@
 // Includes
 #include "Main.h"
 
+// JSON Library
+using json = nlohmann::json;
+
+// MQTT pointers
 std::tuple<mqtt::async_client_ptr, mqtt::connect_options_ptr,
            mqtt::callback_ptr> mqttClient;
 
@@ -87,9 +91,15 @@ void LoadSettings()
 void __stdcall PlayerLaunch_AFTER(unsigned int iShip, unsigned int client) {
     returncode = DEFAULT_RETURNCODE;
 
+    json jPlayerContainer;
+    json jPlayer;
+    jPlayer["name"] = wstos((const wchar_t *)Players.GetActiveCharacterName(client));
+    jPlayer["online"] = true;
+    jPlayerContainer.push_back(jPlayer);
+
 	// Create payload for mqtt message
-    std::wstring name = (const wchar_t *)Players.GetActiveCharacterName(client);
-    mqtt::message_ptr pubmsg = mqtt::make_message("login", wstos(name));
+    mqtt::message_ptr pubmsg =
+        mqtt::make_message("players", jPlayerContainer.dump());
     pubmsg->set_qos(1);
 
 	// Check to ensure we are connected to the broker
