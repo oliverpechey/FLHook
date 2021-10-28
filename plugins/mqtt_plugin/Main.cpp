@@ -88,37 +88,45 @@ void LoadSettings()
 	mqttClient = ConnectBroker();
 }
 
-void __stdcall PlayerLaunch_AFTER(unsigned int iShip, unsigned int client) {
-    returncode = DEFAULT_RETURNCODE;
-
+void SendPlayerMessage(uint iClientID, bool online) {
     json jPlayerContainer;
     json jPlayer;
 
     std::wstring wscCharname =
-        (const wchar_t *)Players.GetActiveCharacterName(client);
+        (const wchar_t *)Players.GetActiveCharacterName(iClientID);
 
     int rank;
     HkGetRank(wscCharname, rank);
 
     jPlayer["name"] = wstos(wscCharname);
-    jPlayer["online"] = true;
-    jPlayer["id"] = client;
+    jPlayer["online"] = online;
+    jPlayer["id"] = iClientID;
     jPlayer["rank"] = rank;
-    jPlayer["system"] = HkGetPlayerSystemS(client);
+    jPlayer["system"] = HkGetPlayerSystemS(iClientID);
 
     jPlayerContainer.push_back(jPlayer);
 
-	// Create payload for mqtt message
+    // Create payload for mqtt message
     mqtt::message_ptr pubmsg =
         mqtt::make_message("players", jPlayerContainer.dump());
     pubmsg->set_qos(1);
 
-	// Check to ensure we are connected to the broker
-    if(!std::get<0>(mqttClient)->is_connected())
+    // Check to ensure we are connected to the broker
+    if (!std::get<0>(mqttClient)->is_connected())
         mqttClient = ConnectBroker();
 
-	//Send the message
+    // Send the message
     std::get<0>(mqttClient)->publish(pubmsg);
+}
+
+void __stdcall PlayerLaunch_AFTER(uint iShip, uint iClientID) {
+    returncode = DEFAULT_RETURNCODE;
+    SendPlayerMessage(iClientID, true);
+}
+
+void __stdcall DisConnect(unsigned int iClientID, enum EFLConnection state) {
+    returncode = DEFAULT_RETURNCODE;
+    SendPlayerMessage(iClientID, false);
 }
 
 // This hook fires around once a second. Using this to report load times back to the MQTT server
@@ -171,5 +179,7 @@ EXPORT PLUGIN_INFO *Get_PluginInfo() {
                         PLUGIN_HkIServerImpl_PlayerLaunch_AFTER, 0));
     p_PI->lstHooks.push_back(
         PLUGIN_HOOKINFO((FARPROC *)&CheckKick, PLUGIN_HkTimerCheckKick, 0));
+    p_PI->lstHooks.push_back(PLUGIN_HOOKINFO(
+        (FARPROC *)&DisConnect, PLUGIN_HkIServerImpl_DisConnect, 0));
     return p_PI;
 }
