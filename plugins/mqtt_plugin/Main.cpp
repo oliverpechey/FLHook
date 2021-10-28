@@ -93,8 +93,19 @@ void __stdcall PlayerLaunch_AFTER(unsigned int iShip, unsigned int client) {
 
     json jPlayerContainer;
     json jPlayer;
-    jPlayer["name"] = wstos((const wchar_t *)Players.GetActiveCharacterName(client));
+
+    std::wstring wscCharname =
+        (const wchar_t *)Players.GetActiveCharacterName(client);
+
+    int rank;
+    HkGetRank(wscCharname, rank);
+
+    jPlayer["name"] = wstos(wscCharname);
     jPlayer["online"] = true;
+    jPlayer["id"] = client;
+    jPlayer["rank"] = rank;
+    jPlayer["system"] = HkGetPlayerSystemS(client);
+
     jPlayerContainer.push_back(jPlayer);
 
 	// Create payload for mqtt message
