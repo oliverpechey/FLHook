@@ -662,6 +662,7 @@ struct USERCMD {
 
 // The user chat commands for this plugin
 USERCMD UserCmds[] = {
+    {L"/comm", MiscCmds::UserCmd_Comm, L"Usage: /comm"},
     {L"/pos", MiscCmds::UserCmd_Pos, L"Usage: /pos"},
     {L"/stuck", MiscCmds::UserCmd_Stuck, L"Usage: /stuck"},
     {L"/droprep", MiscCmds::UserCmd_DropRep, L"Usage: /droprep"},

@@ -78,6 +78,8 @@ void ClearClientInfo(uint iClientID);
 void BaseEnter(unsigned int iBaseID, unsigned int iClientID);
 void CharacterInfoReq(unsigned int iClientID, bool p2);
 void Timer();
+bool UserCmd_Comm(uint iClientID, const std::wstring &wscCmd,
+                 const std::wstring &wscParam, const wchar_t *usage);
 bool UserCmd_Pos(uint iClientID, const std::wstring &wscCmd,
                  const std::wstring &wscParam, const wchar_t *usage);
 bool UserCmd_Stuck(uint iClientID, const std::wstring &wscCmd,

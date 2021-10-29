@@ -104,6 +104,27 @@ void MiscCmds::Timer() {
     }
 }
 
+bool MiscCmds::UserCmd_Comm(uint iClientID, const std::wstring &wscCmd,
+                            const std::wstring &wscParam,
+                            const wchar_t *usage) {
+
+    uint iShip;
+    pub::Player::GetShip(iClientID, iShip);
+
+    Costume sc;
+    sc.iHead = 2312987978;
+    sc.iBody = 3052246286;
+
+    uint sendcomm;
+
+    PrintUserCmdText(iClientID, L"Sending comm...");
+
+    pub::SpaceObj::SendComm(0, iShip, 2785581891, &sc, 13015, &sendcomm, 1,
+                            19001,
+                            0, false);
+    return true;
+}
+
 /** Print current position */
 bool MiscCmds::UserCmd_Pos(uint iClientID, const std::wstring &wscCmd,
                            const std::wstring &wscParam, const wchar_t *usage) {
