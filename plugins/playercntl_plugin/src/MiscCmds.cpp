@@ -112,14 +112,16 @@ bool MiscCmds::UserCmd_Comm(uint iClientID, const std::wstring &wscCmd,
     pub::Player::GetShip(iClientID, iShip);
 
     Costume sc;
-    sc.iHead = 2312987978;
-    sc.iBody = 3052246286;
+    sc.head = 2312987978;
+    sc.body = 3052246286;
+    sc.left_hand = 2479975689;
+    sc.right_hand = 2264565644;
 
-    uint sendcomm;
+    uint line = 2264565644;
 
     PrintUserCmdText(iClientID, L"Sending comm...");
 
-    pub::SpaceObj::SendComm(0, iShip, 2785581891, &sc, 13015, &sendcomm, 1,
+    pub::SpaceObj::SendComm(0, iShip, 2785581891, &sc, 13015, &line, 1,
                             19001,
                             0, false);
     return true;
