@@ -117,7 +117,7 @@ bool MiscCmds::UserCmd_Comm(uint iClientID, const std::wstring &wscCmd,
     sc.left_hand = 2479975689;
     sc.right_hand = 2264565644;
 
-    uint line = 2264565644;
+    uint line = 3014362628;
 
     PrintUserCmdText(iClientID, L"Sending comm...");
 
