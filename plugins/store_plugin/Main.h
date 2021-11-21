@@ -24,5 +24,4 @@ struct USERCMD
 
 #define IS_CMD(a) !wscCmd.compare(L##a)
 
-
 std::string scUserStore;
