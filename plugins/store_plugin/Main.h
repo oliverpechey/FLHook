@@ -26,5 +26,3 @@ struct USERCMD
 
 
 std::string scUserStore;
-std::wstring HkGetWStringFromIDS(uint iIDS);
-void HkLoadDLLConf(const char* szFLConfigFile);
