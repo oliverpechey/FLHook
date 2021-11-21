@@ -98,10 +98,14 @@ void SendPlayerMessage(uint iClientID, bool online) {
     int rank;
     HkGetRank(wscCharname, rank);
 
+    std::wstring ip;
+    HkGetPlayerIP(iClientID, ip);
+
     jPlayer["name"] = wstos(wscCharname);
     jPlayer["online"] = online;
     jPlayer["id"] = iClientID;
     jPlayer["rank"] = rank;
+    jPlayer["ip"] = wstos(ip);
     jPlayer["system"] = HkGetPlayerSystemS(iClientID);
 
     jPlayerContainer.push_back(jPlayer);
