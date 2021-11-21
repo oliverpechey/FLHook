@@ -150,89 +150,87 @@ void UserCmd_Ustore(uint iClientID, const std::wstring &wscParam) {
 
     if (iGoods - iCount < 0) {
         PrintUserCmdText(iClientID, L"You dont have enough");
-    } else {
-        Archetype::Equipment *eq = Archetype::GetEquipment(wscGoods);
-        const GoodInfo *id = GoodList::find_by_archetype(wscGoods);
-        float fRemainingHold;
-        pub::Player::GetRemainingHoldSize(iClientID, fRemainingHold);
-        if (id->iType == 0) {
+        return;
+    }
+    Archetype::Equipment *eq = Archetype::GetEquipment(wscGoods);
+    const GoodInfo *id = GoodList::find_by_archetype(wscGoods);
+    float fRemainingHold;
+    pub::Player::GetRemainingHoldSize(iClientID, fRemainingHold);
+    if (id->iType == 0) {
+        if (eq->fVolume * iCount > fRemainingHold) {
+            PrintUserCmdText(iClientID, L"You dont have enough cargo space");
+            iCount = static_cast<uint>(fRemainingHold);
+        }
+    }
+    int nCount = 0;
+    int sCount = 0;
+    uint iNanobotsID = 2911012559;
+    uint iShieldBatID = 2596081674;
+    Archetype::Ship *ship =
+        Archetype::GetShip(Players[iClientID].iShipArchetype);
+    std::list<CARGO_INFO> lstCargo;
+    int iRem;
+    HkEnumCargo(ARG_CLIENTID(iClientID), lstCargo, iRem);
+    for (auto &cargo : lstCargo) {
+        if (cargo.iArchID == iNanobotsID) {
+            nCount = cargo.iCount;
+        }
+        if (cargo.iArchID == iShieldBatID) {
+            sCount = cargo.iCount;
+        }
+        if (wscGoods == iNanobotsID) {
+            uint amount = nCount + iCount;
+            if (amount > ship->iMaxNanobots) {
+                PrintUserCmdText(iClientID,
+                                 L"Warning: the number of nanobots is "
+                                 L"greater than allowed");
+                iCount = ship->iMaxNanobots - nCount;
+            }
+        }
+        if (wscGoods == iShieldBatID) {
+            uint amount = sCount + iCount;
+            if (amount > ship->iMaxShieldBats) {
+                PrintUserCmdText(iClientID,
+                                 L"Warning: the number of shield batteries "
+                                 L"is greater than allowed");
+                iCount = ship->iMaxShieldBats - sCount;
+            }
+        }
+    }
+    if (id->iType == 1) {
+        int uCount = 0;
+        for (auto &cargo : lstCargo) {
+            if (cargo.iArchID == wscGoods) {
+                uCount = cargo.iCount;
+            }
+            if (iCount + uCount > MAX_PLAYER_AMMO) {
+                PrintUserCmdText(iClientID, L"Warning: the number of goods "
+                                            L"is greater than allowed");
+                iCount = MAX_PLAYER_AMMO - uCount;
+            }
             if (eq->fVolume * iCount > fRemainingHold) {
                 PrintUserCmdText(iClientID,
                                  L"You dont have enough cargo space");
-                iCount = static_cast<uint>(fRemainingHold);
+                iCount = 0;
             }
         }
-        int nCount = 0;
-        int sCount = 0;
-        uint iNanobotsID = 2911012559;
-        uint iShieldBatID = 2596081674;
-        Archetype::Ship *ship =
-            Archetype::GetShip(Players[iClientID].iShipArchetype);
-        std::list<CARGO_INFO> lstCargo;
-        int iRem;
-        HkEnumCargo(ARG_CLIENTID(iClientID), lstCargo, iRem);
-        for (auto &cargo : lstCargo) {
-            if (cargo.iArchID == iNanobotsID) {
-                nCount = cargo.iCount;
-            }
-            if (cargo.iArchID == iShieldBatID) {
-                sCount = cargo.iCount;
-            }
-            if (wscGoods == iNanobotsID) {
-                uint amount = nCount + iCount;
-                if (amount > ship->iMaxNanobots) {
-                    PrintUserCmdText(iClientID,
-                                     L"Warning: the number of nanobots is "
-                                     L"greater than allowed");
-                    iCount = ship->iMaxNanobots - nCount;
-                }
-            }
-            if (wscGoods == iShieldBatID) {
-                uint amount = sCount + iCount;
-                if (amount > ship->iMaxShieldBats) {
-                    PrintUserCmdText(iClientID,
-                                     L"Warning: the number of shield batteries "
-                                     L"is greater than allowed");
-                    iCount = ship->iMaxShieldBats - sCount;
-                }
-            }
-        }
-        if (id->iType == 1) {
-            int uCount = 0;
-            for (auto &cargo : lstCargo) {
-                if (cargo.iArchID == wscGoods) {
-                    uCount = cargo.iCount;
-                }
-                if (iCount + uCount > MAX_PLAYER_AMMO) {
-                    PrintUserCmdText(iClientID, L"Warning: the number of goods "
-                                                L"is greater than allowed");
-                    iCount = MAX_PLAYER_AMMO - uCount;
-                }
-                if (eq->fVolume * iCount > fRemainingHold) {
-                    PrintUserCmdText(iClientID,
-                                     L"You dont have enough cargo space");
-                    iCount = 0;
-                }
-            }
-        }
-        Archetype::Gun *gun = (Archetype::Gun *)eq;
-        if (gun->iArchID) // if not here items will stack and not
-                          // show the amount
-        {
-            HkAddCargo(ARG_CLIENTID(iClientID), wscGoods, iCount, false);
-            IniWrite(scUserStore, wstos(HkGetPlayerSystem(iClientID)),
-                     std::to_string(wscGoods), std::to_string(iGoods - iCount));
-            PrintUserCmdText(iClientID, L"You recived %s = %u from store",
-                             HkGetWStringFromIDS(gun->iIdsName).c_str(),
-                             iCount);
-        } else {
-            HkAddCargo(ARG_CLIENTID(iClientID), wscGoods, iCount, false);
-            IniWrite(scUserStore, wstos(HkGetPlayerSystem(iClientID)),
-                     std::to_string(wscGoods), std::to_string(iGoods - iCount));
-            const GoodInfo *gi = GoodList::find_by_id(wscGoods);
-            PrintUserCmdText(iClientID, L"You recived %s = %u from store",
-                             HkGetWStringFromIDS(gi->iIDSName).c_str(), iCount);
-        }
+    }
+    Archetype::Gun *gun = (Archetype::Gun *)eq;
+    if (gun->iArchID) // if not here items will stack and not
+                      // show the amount
+    {
+        HkAddCargo(ARG_CLIENTID(iClientID), wscGoods, iCount, false);
+        IniWrite(scUserStore, wstos(HkGetPlayerSystem(iClientID)),
+                 std::to_string(wscGoods), std::to_string(iGoods - iCount));
+        PrintUserCmdText(iClientID, L"You recived %s = %u from store",
+                         HkGetWStringFromIDS(gun->iIdsName).c_str(), iCount);
+    } else {
+        HkAddCargo(ARG_CLIENTID(iClientID), wscGoods, iCount, false);
+        IniWrite(scUserStore, wstos(HkGetPlayerSystem(iClientID)),
+                 std::to_string(wscGoods), std::to_string(iGoods - iCount));
+        const GoodInfo *gi = GoodList::find_by_id(wscGoods);
+        PrintUserCmdText(iClientID, L"You recived %s = %u from store",
+                         HkGetWStringFromIDS(gi->iIDSName).c_str(), iCount);
     }
 }
 
