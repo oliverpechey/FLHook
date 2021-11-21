@@ -79,7 +79,7 @@ void UserCmd_Store(uint iClientID, const std::wstring& wscParam)
 				{
 					int iGoods = 0;
 					iGoods = IniGetI(scUserStore, wstos(HkGetPlayerSystem(iClientID)), utos(cargo.iArchID), 0);
-					IniWrite(scUserStore, wstos(HkGetPlayerSystem(iClientID)), utos(cargo.iArchID), itos(iGoods + cargo.iCount));
+                    IniWrite(scUserStore, wstos(HkGetPlayerSystem(iClientID)), utos(cargo.iArchID), std::to_string(iGoods + cargo.iCount));
 					HkRemoveCargo(ARG_CLIENTID(iClientID), cargo.iID, cargo.iCount);
 				}
 			}
@@ -112,7 +112,7 @@ void UserCmd_Store(uint iClientID, const std::wstring& wscParam)
 					{
 						int iGoods = 0;
 						iGoods = IniGetI(scUserStore, wstos(HkGetPlayerSystem(iClientID)), utos(cargo.iArchID), 0);
-						IniWrite(scUserStore, wstos(HkGetPlayerSystem(iClientID)), utos(cargo.iArchID), itos(iGoods + wscCount));
+                        IniWrite(scUserStore, wstos(HkGetPlayerSystem(iClientID)), utos(cargo.iArchID), std::to_string(iGoods + wscCount));
 						HkRemoveCargo(ARG_CLIENTID(iClientID), cargo.iID, wscCount);
 						PrintUserCmdText(iClientID, L"Ok");
 					}
@@ -243,13 +243,13 @@ void UserCmd_Ustore(uint iClientID, const std::wstring& wscParam)
 					if (gun->iArchID)//if not here items will stack and not show the amount
 					{
 						HkAddCargo(ARG_CLIENTID(iClientID), wscGoods, wscCount, false);
-						IniWrite(scUserStore, wstos(HkGetPlayerSystem(iClientID)), utos(wscGoods), itos(iGoods - wscCount));
+                        IniWrite(scUserStore, wstos(HkGetPlayerSystem(iClientID)), utos(wscGoods), std::to_string(iGoods - wscCount));
 						PrintUserCmdText(iClientID, L"You recived %s = %u from store", HkGetWStringFromIDS(gun->iIdsName).c_str(), wscCount);
 					}
 					else
 					{
 						HkAddCargo(ARG_CLIENTID(iClientID), wscGoods, wscCount, false);
-						IniWrite(scUserStore, wstos(HkGetPlayerSystem(iClientID)), utos(wscGoods), itos(iGoods - wscCount));
+                        IniWrite(scUserStore, wstos(HkGetPlayerSystem(iClientID)), utos(wscGoods), std::to_string(iGoods - wscCount));
 						const GoodInfo* gi = GoodList::find_by_id(wscGoods);
 						PrintUserCmdText(iClientID, L"You recived %s = %u from store", HkGetWStringFromIDS(gi->iIDSName).c_str(), wscCount);
 					}
