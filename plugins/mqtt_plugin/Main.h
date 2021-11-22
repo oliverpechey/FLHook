@@ -28,3 +28,5 @@ struct USERCMD
 };
 
 #define IS_CMD(a) !wscCmd.compare(L##a)
+
+void SendAllPlayers();

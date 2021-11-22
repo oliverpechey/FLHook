@@ -18,13 +18,19 @@ std::tuple<mqtt::async_client_ptr, mqtt::connect_options_ptr,
            mqtt::callback_ptr>
     mqttClient;
 
-// Callback class to handle disconnects
 class callback : public virtual mqtt::callback {
   public:
+    // Callback to handle disconnects
     void connection_lost(const std::string &cause) override {
         ConPrint(L"MQTT: Connection lost\n");
         if (!cause.empty())
             ConPrint(L"Cause: " + stows(cause));
+    }
+
+    // Callback to handle received messages
+    void message_arrived(mqtt::const_message_ptr msg) override {
+        if (msg->get_topic() == "allplayers")
+            SendAllPlayers();
     }
 };
 
@@ -43,9 +49,17 @@ ConnectBroker() {
     try {
         ConPrint(L"MQTT: connecting...\n");
         mqtt::token_ptr conntok = client->connect(*connOpts);
+
+        // Wait for connection to be established TODO: This just waits if the
+        // mqtt server is down and lags the server
         ConPrint(L"MQTT: Waiting for connection...\n");
         conntok->wait();
         ConPrint(L"MQTT: Connected\n");
+
+        // Subscribe to /allplayers
+        const std::string TOPIC("allplayers");
+        client->subscribe(TOPIC, 0);
+
     } catch (const mqtt::exception &exc) {
         ConPrint(L"MQTT: error " + stows(exc.what()) + L"\n");
     }
@@ -120,6 +134,13 @@ void SendPlayerMessage(uint iClientID, bool online) {
     jPlayerContainer.push_back(jPlayer);
 
     SendJson("players", jPlayerContainer);
+}
+
+void SendAllPlayers() {
+    struct PlayerData *pPD = 0;
+    while (pPD = Players.traverse_active(pPD)) {
+        SendPlayerMessage(HkGetClientIdFromPD(pPD), true);
+    }
 }
 
 void __stdcall PlayerLaunch_AFTER(uint iShip, uint iClientID) {
