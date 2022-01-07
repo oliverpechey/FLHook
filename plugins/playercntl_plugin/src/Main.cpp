@@ -38,6 +38,9 @@ bool set_bLocalTime = false;
 bool set_bEnableLoginSound = false;
 bool set_bEnableMe = false;
 bool set_bEnableDo = false;
+bool set_bEnableCargoDrop = false;
+bool set_bEnableWardrobe = false;
+bool set_bEnableRestartCost = false;
 
 float set_fSpinProtectMass;
 float set_fSpinImpulseMultiplier;
@@ -103,13 +106,18 @@ void LoadSettings() {
         IniGetB(scPluginCfgFile, "General", "EnablePimpShip", false);
     set_bEnableRestart =
         IniGetB(scPluginCfgFile, "General", "EnableRestart", false);
+    set_bEnableRestartCost =
+        IniGetB(scPluginCfgFile, "General", "EnableRestartCost", false);
     set_bEnableGiveCash =
         IniGetB(scPluginCfgFile, "General", "EnableGiveCash", false);
     set_bEnableLoginSound =
         IniGetB(scPluginCfgFile, "General", "EnableLoginSound", false);
     set_bEnableMe = IniGetB(scPluginCfgFile, "General", "EnableMe", false);
     set_bEnableDo = IniGetB(scPluginCfgFile, "General", "EnableDo", false);
-
+    set_bEnableCargoDrop =
+        IniGetB(scPluginCfgFile, "General", "EnableCargoDrop", false);
+    set_bEnableWardrobe =
+        IniGetB(scPluginCfgFile, "General", "EnableWardrobe", false);
     set_fSpinProtectMass =
         IniGetF(scPluginCfgFile, "General", "SpinProtectionMass", 180.0f);
     set_fSpinImpulseMultiplier =
@@ -126,11 +134,13 @@ void LoadSettings() {
     HyperJump::LoadSettings(scPluginCfgFile);
     PurchaseRestrictions::LoadSettings(scPluginCfgFile);
     IPBans::LoadSettings(scPluginCfgFile);
-    CargoDrop::LoadSettings(scPluginCfgFile);
     Restart::LoadSettings(scPluginCfgFile);
     RepFixer::LoadSettings(scPluginCfgFile);
     Message::LoadSettings(scPluginCfgFile);
     SystemSensor::LoadSettings(scPluginCfgFile);
+    Wardrobe::LoadSettings(scPluginCfgFile);
+    if (set_bEnableCargoDrop)
+        CargoDrop::LoadSettings(scPluginCfgFile);
     CrashCatcher::Init();
 
     // Load sounds from config if enabled
@@ -156,12 +166,13 @@ void ClearClientInfo(uint iClientID) {
     returncode = DEFAULT_RETURNCODE;
     MiscCmds::ClearClientInfo(iClientID);
     HyperJump::ClearClientInfo(iClientID);
-    CargoDrop::ClearClientInfo(iClientID);
     IPBans::ClearClientInfo(iClientID);
     Message::ClearClientInfo(iClientID);
     PurchaseRestrictions::ClearClientInfo(iClientID);
     AntiJumpDisconnect::ClearClientInfo(iClientID);
     SystemSensor::ClearClientInfo(iClientID);
+    if (set_bEnableCargoDrop)
+        CargoDrop::ClearClientInfo(iClientID);
 }
 
 /** One second timer */
@@ -169,21 +180,26 @@ void HkTimer() {
     returncode = DEFAULT_RETURNCODE;
     MiscCmds::Timer();
     HyperJump::Timer();
-    CargoDrop::Timer();
     Message::Timer();
     Restart::Timer();
     Rename::Timer();
+    if (set_bEnableCargoDrop)
+        CargoDrop::Timer();
+    Wardrobe::Timer();
 }
 
 /// Hook for ship distruction. It's easier to hook this than the PlayerDeath
 /// one. Drop a percentage of cargo + some loot representing ship bits.
-void SendDeathMessage(const std::wstring &wscMsg, uint iSystem,
+void SendDeathMsg(const std::wstring &wscMsg, uint iSystem,
                   uint iClientIDVictim, uint iClientIDKiller) {
     returncode = NOFUNCTIONCALL;
 
     HyperJump::SendDeathMsg(wscMsg, iSystem, iClientIDVictim, iClientIDKiller);
-    CargoDrop::SendDeathMsg(wscMsg, iSystem, iClientIDVictim, iClientIDKiller);
     Message::SendDeathMsg(wscMsg, iSystem, iClientIDVictim, iClientIDKiller);
+
+    if (set_bEnableCargoDrop)
+        CargoDrop::SendDeathMsg(wscMsg, iSystem, iClientIDVictim,
+                                iClientIDKiller);
 
     const wchar_t *victim =
         (const wchar_t *)Players.GetActiveCharacterName(iClientIDVictim);
@@ -280,7 +296,8 @@ void __stdcall Login(struct SLoginInfo const &li, unsigned int iClientID) {
     returncode = DEFAULT_RETURNCODE;
 
     // Player sound when player logs in (if enabled)
-    pub::Audio::PlaySoundEffect(iClientID, sounds[rand() % sounds.size()]);
+    if (set_bEnableLoginSound && sounds.size() > 0)
+        pub::Audio::PlaySoundEffect(iClientID, sounds[rand() % sounds.size()]);
 
     CAccount *acc = Players.FindAccountFromClientID(iClientID);
     if (acc) {
@@ -594,7 +611,8 @@ void __stdcall StopTradelane(unsigned int iClientID, unsigned int p1,
 void __stdcall SPObjUpdate(struct SSPObjUpdateInfo const &ui,
                            unsigned int iClientID) {
     returncode = DEFAULT_RETURNCODE;
-    CargoDrop::SPObjUpdate(ui, iClientID);
+    if (set_bEnableCargoDrop)
+        CargoDrop::SPObjUpdate(ui, iClientID);
 }
 } // namespace HkIServerImpl
 
@@ -790,7 +808,13 @@ USERCMD UserCmds[] = {
     {L"/settagpass", Rename::UserCmd_SetTagPass,
      L"Usage: /settagpass <tag> <master password> <rename password>"},
     {L"/me", Message::UserCmd_Me, L"Usage: /me <message>"},
-    {L"/do", Message::UserCmd_Do, L"Usage: /do <message>"}};
+    {L"/do", Message::UserCmd_Do, L"Usage: /do <message>"},
+    {L"/show", Wardrobe::UserCmd_ShowWardrobe,
+     L"Usage: /show <heads/bodies> - This shows the available heads and bodies "
+     L"for the /change command."},
+    {L"/change", Wardrobe::UserCmd_ChangeCostume,
+     L"Usage: /change <head/body> <name> - This changes Trent's head or body "
+     L"to one specified in the /show command."}};
 
 /**
 This function is called by FLHook when a user types a chat std::string. We look

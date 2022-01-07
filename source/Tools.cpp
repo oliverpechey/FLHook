@@ -429,6 +429,9 @@ BOOL FileExists(LPCTSTR szPath) {
 Remove leading and trailing spaces from the std::string  ~FlakCommon by Motah.
 */
 template <typename Str> Str Trim(const Str &scIn) {
+    if (scIn.empty())
+        return scIn;
+
     using Char = typename Str::value_type;
     constexpr auto trimmable = []() constexpr {
         if constexpr (std::is_same_v<Char, char>)
@@ -441,7 +444,7 @@ template <typename Str> Str Trim(const Str &scIn) {
     auto start = scIn.find_first_not_of(trimmable);
     auto end = scIn.find_last_not_of(trimmable);
 
-    return scIn.substr(start, end - start);
+    return scIn.substr(start, end - start + 1);
 }
 
 std::wstring GetTimeString(bool bLocalTime) {

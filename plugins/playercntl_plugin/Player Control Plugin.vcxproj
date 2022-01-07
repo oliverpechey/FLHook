@@ -49,6 +49,9 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <TargetName>playercntl</TargetName>
   </PropertyGroup>
+  <PropertyGroup Label="Vcpkg">
+    <VcpkgEnableManifest>true</VcpkgEnableManifest>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -83,6 +86,7 @@
     <ClCompile Include="src\StartupCache.cpp" />
     <ClCompile Include="src\SystemSensor.cpp" />
     <ClCompile Include="src\wildcards.cpp" />
+    <ClCompile Include="src\Wardrobe.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="readme.txt" />

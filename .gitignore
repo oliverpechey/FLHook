@@ -6,6 +6,7 @@ Debug
 Release
 *.vcxproj.user
 *.log
+vcpkg_installed/
 
 !misc/acctpath_patch/bin/*.cfg
 

@@ -3,8 +3,35 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+HK_ERROR HkAddToGroup(uint iClientID, uint iGroupID) {
+    // check if logged in
+    if (iClientID == -1)
+        return HKE_PLAYER_NOT_LOGGED_IN;
+
+    uint iCurrentGroupID = Players.GetGroupID(iClientID);
+    if (iCurrentGroupID == iGroupID)
+        return HKE_INVALID_GROUP_ID;
+
+    CPlayerGroup *group = CPlayerGroup::FromGroupID(iGroupID);
+    if (!group)
+        return HKE_INVALID_GROUP_ID;
+    group->AddMember(iClientID);
+    return HKE_OK;
+}
+
+HK_ERROR HkGetGroupID(uint iClientID, uint &iGroupID) {
+    // check if logged in
+    if (iClientID == -1)
+        return HKE_PLAYER_NOT_LOGGED_IN;
+
+    iGroupID = Players.GetGroupID(iClientID);
+    return HKE_OK;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 HK_ERROR HkGetCash(const std::wstring &wscCharname, int &iCash) {
-    HK_GET_CLIENTID(iClientID, wscCharname);
+    HK_GET_CLIENTID_OR_LOGGED_OUT(iClientID, wscCharname);
 
     if ((iClientID != -1) && bIdString && HkIsInCharSelectMenu(iClientID))
         return HKE_NO_CHAR_SELECTED;
@@ -47,7 +74,7 @@ HK_ERROR HkGetCash(const std::wstring &wscCharname, int &iCash) {
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 HK_ERROR HkAddCash(const std::wstring &wscCharname, int iAmount) {
-    HK_GET_CLIENTID(iClientID, wscCharname);
+    HK_GET_CLIENTID_OR_LOGGED_OUT(iClientID, wscCharname);
 
     uint iClientIDAcc = 0;
     if (iClientID == -1) {
@@ -160,7 +187,7 @@ HK_ERROR HkKickReason(const std::wstring &wscCharname,
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 HK_ERROR HkBan(const std::wstring &wscCharname, bool bBan) {
-    HK_GET_CLIENTID(iClientID, wscCharname);
+    HK_GET_CLIENTID_OR_LOGGED_OUT(iClientID, wscCharname);
 
     CAccount *acc;
     if (iClientID != -1)
@@ -456,7 +483,7 @@ HK_ERROR HkAddCargo(const std::wstring &wscCharname,
 
 HK_ERROR HkRename(const std::wstring &wscCharname,
                   const std::wstring &wscNewCharname, bool bOnlyDelete) {
-    HK_GET_CLIENTID(iClientID, wscCharname);
+    HK_GET_CLIENTID_OR_LOGGED_OUT(iClientID, wscCharname);
 
     if ((iClientID == -1) && !HkGetAccountByCharname(wscCharname))
         return HKE_CHAR_DOES_NOT_EXIST;
@@ -1017,7 +1044,7 @@ HK_ERROR HkGetGroupMembers(const std::wstring &wscCharname,
 HK_ERROR HkReadCharFile(const std::wstring &wscCharname,
                         std::list<std::wstring> &lstOutput) {
     lstOutput.clear();
-    HK_GET_CLIENTID(iClientID, wscCharname);
+    HK_GET_CLIENTID_OR_LOGGED_OUT(iClientID, wscCharname);
 
     std::wstring wscDir;
     CAccount *acc;

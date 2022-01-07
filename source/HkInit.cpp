@@ -227,7 +227,8 @@ void ClearClientInfo(uint clientID) {
     ClientInfo[clientID].bEngineKilled = false;
     ClientInfo[clientID].bThrusterActivated = false;
     ClientInfo[clientID].bTradelane = false;
-
+    ClientInfo[clientID].iGroupID = 0;
+    
     ClientInfo[clientID].bSpawnProtected = false;
     
     CallPluginsAfter(HookedCall::FLHook__ClearClientInfo, clientID);

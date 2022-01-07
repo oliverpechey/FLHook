@@ -53,19 +53,25 @@ bool UserCmd_AFK(uint iClientID, const std::wstring &wscCmd,
     return true;
 }
 
-// This command is called when a player types /back
-bool UserCmd_Back(uint iClientID, const std::wstring &wscCmd,
-                  const std::wstring &wscParam, const wchar_t *usage) {
+// This function welcomes the player back and removes their afk status
+void Back(uint iClientID) {
     if (afks.count(iClientID) > 0) {
         afks.erase(iClientID);
         std::wstring message =
             (const wchar_t *)Players.GetActiveCharacterName(iClientID);
         RedText(iClientID, L"Welcome back ", L".");
-        return true;
+        return;
     }
     PrintUserCmdText(
         iClientID,
         L"You are not marked as AFK. To do this, use the /afk command.");
+    return;
+}
+
+// This command is called when a player types /back
+bool UserCmd_Back(uint iClientID, const std::wstring &wscCmd,
+                  const std::wstring &wscParam, const wchar_t *usage) {
+    Back(iClientID);
     return true;
 }
 
@@ -75,10 +81,21 @@ void DisConnect_AFTER(uint iClientID) {
         afks.erase(iClientID);
 }
 
-// Hook on chat being sent
+// Hook on chat being sent (This gets called twice with the iClientID and iTo
+// swapped
 void __stdcall HkCb_SendChat(uint iClientID, uint iTo, uint iSize, void *pRDL) {
     if (HkIsValidClientID(iTo) && afks.count(iClientID) > 0)
         PrintUserCmdText(iTo, L"This user is away from keyboard.");
+}
+
+// Hooks on chat being submitted
+void __stdcall SubmitChat(struct CHAT_ID cId, unsigned long lP1,
+                          void const *rdlReader, struct CHAT_ID cIdTo,
+                          int iP2) {
+    returncode = DEFAULT_RETURNCODE;
+
+    if (HkIsValidClientID(cId.iID) && afks.count(cId.iID))
+        Back(cId.iID);
 }
 
 // Client command processing
@@ -149,4 +166,5 @@ EXPORT void ExportPluginInfo(PluginInfo* pi) {
     pi->emplaceHook(HookedCall::FLHook__UserCommand__Process, &UserCmd_Process);
     pi->emplaceHook(HookedCall::FLHook__UserCommand__Help, &UserCmd_Help);
     pi->emplaceHook(HookedCall::IChat__SendChat, &HkCb_SendChat);
+    pi->emplaceHook(HookedCall::IServerImpl__SubmitChat, &SubmitChat);
 }

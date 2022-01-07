@@ -4,6 +4,7 @@
 #include <fstream>
 #include <iostream>
 #include <plugin.h>
+#include <nlohmann/json.hpp>
 
 static int set_iPluginDebug = 0;
 

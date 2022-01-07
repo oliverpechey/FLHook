@@ -4,6 +4,10 @@
 // Includes
 #include "Main.h"
 
+// JSON Library
+using json = nlohmann::json;
+
+// Global Variables
 ReturnCode returncode;
 
 std::string jsonFileName;
@@ -17,7 +21,8 @@ void LoadSettings() {
     GetCurrentDirectory(sizeof(szCurDir), szCurDir);
     std::string configFile =
         std::string(szCurDir) + "\\flhook_plugins\\stats.cfg";
-    jsonFileName = IniGetS(configFile, "General", "jsonFileName", "");
+    jsonFileName =
+        IniGetS(configFile, "General", "jsonFileName", "EXPORTS\\stats.json");
 
     HkLoadStringDLLs();
 
@@ -45,50 +50,62 @@ void LoadSettings() {
     }
 }
 
+// This removes double quotes from player names. This causes invalid json.
+std::string encode(std::string data) {
+    std::string scEncoded;
+    scEncoded.reserve(data.size());
+    for (size_t pos = 0; pos != data.size(); ++pos) {
+        if (data[pos] == '\"')
+            scEncoded.append("&quot;");
+        else
+            scEncoded.append(1, data[pos]);
+    }
+    return scEncoded;
+}
+
+// Function to export load and player data to a json file
 void ExportJSON() {
     std::ofstream out(jsonFileName);
 
-    // Add Server Load object
-    out << "{\"serverload\": \"" + std::to_string(g_iServerLoad) + "\"";
+    json jExport;
+    jExport["serverload"] = g_iServerLoad;
 
-    // Begin Player array
-    out << ",\"players\": [";
-
+    json jPlayers;
     std::list<HKPLAYERINFO> lstPlayers = HkGetPlayers();
+
     for (std::list<HKPLAYERINFO>::iterator player = lstPlayers.begin();
          player != lstPlayers.end(); player++) {
-        // Add comma is not the first player
-        if (player != lstPlayers.begin())
-            out << ",";
+
+        json jPlayer;
 
         // Add name
-        out << "{\"name\": \"" + wstos(player->wscCharname) + "\"";
+        jPlayer["name"] = encode(wstos(player->wscCharname));
 
         // Add rank
         int iRank;
         pub::Player::GetRank(player->iClientID, iRank);
-        out << ",\"rank\": \"" + std::to_string(iRank) + "\"";
+        jPlayer["rank"] = std::to_string(iRank);
 
         // Add group
         int groupID = Players.GetGroupID(player->iClientID);
-        out << ",\"group\": \"" + std::to_string(groupID) + "\"";
+        jPlayer["group"] = groupID ? std::to_string(groupID) : "None";
 
         // Add ship
         Archetype::Ship *ship =
             Archetype::GetShip(Players[player->iClientID].iShipArchetype);
-        (ship) ? out << ",\"ship\": \"" + wstos(mapShips[ship->get_id()]) + "\""
-               : out << ",\"ship\": \"Unknown\"";
+        jPlayer["ship"] = (ship) ? wstos(mapShips[ship->get_id()]) : "Unknown";
 
         // Add system
         uint iSystemID;
         pub::Player::GetSystem(player->iClientID, iSystemID);
         const Universe::ISystem *iSys = Universe::get_system(iSystemID);
-        out << ",\"system\": \"" +
-                   wstos(HkGetWStringFromIDS(iSys->strid_name)) + "\"}";
+        jPlayer["system"] = wstos(HkGetWStringFromIDS(iSys->strid_name));
+
+        jPlayers.push_back(jPlayer);
     }
 
-    // End Player array and rest of output
-    out << "]}";
+    jExport["players"] = jPlayers;
+    out << jExport;
     out.close();
 }
 

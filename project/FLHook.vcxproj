@@ -56,6 +56,17 @@
     <GenerateManifest>true</GenerateManifest>
     <IncludePath>$(SolutionDir)..\source;$(IncludePath)</IncludePath>
   </PropertyGroup>
+  <PropertyGroup Label="Vcpkg">
+    <VcpkgEnableManifest>true</VcpkgEnableManifest>
+  </PropertyGroup>
+  <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <VcpkgTriplet>
+    </VcpkgTriplet>
+  </PropertyGroup>
+  <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <VcpkgTriplet>
+    </VcpkgTriplet>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <CustomBuildStep>
       <Command>xcopy /y  "$(OutDir)$(TargetName).lib" "$(SolutionDir)..\FLHookSDK\lib\"
